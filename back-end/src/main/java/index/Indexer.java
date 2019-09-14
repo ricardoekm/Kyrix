@@ -61,6 +61,9 @@ public abstract class Indexer implements Serializable {
                         else if (Config.indexingScheme
                                 == Config.IndexingScheme.PSQL_NATIVECUBE_INDEX)
                             indexer = PsqlCubeSpatialIndexer.getInstance();
+                        else if (Config.indexingScheme
+                                == Config.IndexingScheme.PSQL_GRID_COMPRESSOR_INDEX)
+                            indexer = PsqlGridCompressIndexer.getInstance();
                         else
                             throw new Exception(
                                     "Index type "

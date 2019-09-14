@@ -50,10 +50,11 @@ public class Config {
         POSTGIS_SPATIAL_INDEX,
         PSQL_NATIVEBOX_INDEX,
         PSQL_NATIVECUBE_INDEX,
-        MYSQL_SPATIAL_INDEX
+        MYSQL_SPATIAL_INDEX,
+        PSQL_GRID_COMPRESSOR_INDEX
     };
 
-    public static IndexingScheme indexingScheme = IndexingScheme.PSQL_NATIVECUBE_INDEX;
+    public static IndexingScheme indexingScheme = IndexingScheme.PSQL_GRID_COMPRESSOR_INDEX;
 
     // underlying database
     public enum Database {

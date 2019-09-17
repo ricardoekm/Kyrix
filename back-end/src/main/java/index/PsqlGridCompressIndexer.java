@@ -21,7 +21,7 @@ public class PsqlGridCompressIndexer extends BoundingBoxIndexer {
     private static PsqlGridCompressIndexer instance = null;
     private final int gridW = 1000;
     private final int gridH = 1000;
-    private final int batchSize = 10000000;
+    private final int batchSize = 1000000;
     private final int updBatchSize = 5000;
 
     // singleton pattern to ensure only one instance existed

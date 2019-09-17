@@ -54,7 +54,7 @@ public class Config {
         PSQL_GRID_COMPRESSOR_INDEX
     };
 
-    public static IndexingScheme indexingScheme = IndexingScheme.PSQL_NATIVECUBE_INDEX;
+    public static IndexingScheme indexingScheme = IndexingScheme.PSQL_GRID_COMPRESSOR_INDEX;
 
     // underlying database
     public enum Database {

@@ -229,7 +229,7 @@ public class PsqlGridCompressIndexer extends BoundingBoxIndexer {
         System.out.println("\nConstructing grouped table...");
         while (rs.next()) {
             rowCount++;
-            if (rowCount % 1000000 == 0) System.out.println(rowCount);
+            if (rowCount % batchSize == 0) System.out.println(rowCount);
             int gridX = rs.getInt(1);
             int gridY = rs.getInt(2);
             if (gridX != curGridX || gridY != curGridY) {

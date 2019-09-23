@@ -138,6 +138,11 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
 
         // index on inserted data if the canvas is the bottom-most canvas
         if (c.getId().equals(bottomCanvas.getId())) {
+            // set maintenance_work_mem variable to high value so can index and cluster faster
+            sql = "SET maintenance_work_mem = '20 GB';";
+            System.out.println(sql);
+            bboxStmt.executeUpdate(sql);
+
             /*
             sql: create index idx_tbl_cube_1 on tbl_cube using gist (v);
             */

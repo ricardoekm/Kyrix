@@ -153,12 +153,13 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
                             + bboxTableName
                             + " using gist (v);";
             bboxStmt.executeUpdate(sql);
-            // use cluster to hopefully sort the index in z-order
-            sql = "cluster " + bboxTableName + " using cube_idx_" + bboxTableName + ";";
             System.out.println(sql);
-            bboxStmt.executeUpdate(sql);
+            bboxStmt.close();
+            // use cluster to hopefully sort the index in z-order
+            Statement clusterStatement = DbConnector.getStmtByDbName(Config.databaseName);
+            sql = "cluster " + bboxTableName + " using cube_idx_" + bboxTableName + ";";
+            clusterStatement.executeUpdate(sql);
         }
-        bboxStmt.close();
     }
 
     @Override

@@ -4,7 +4,7 @@
 if [ "x$PGCONN" = "x" ]; then echo "$0: PGCONN must be set."; exit 1; fi
 if [ "x$PSQL" ]; then PSQL=`which psql`; fi
 if [ ! -x $PSQL ]; then echo "$0: $PSQL not found - consider setting PSQL to the psql(1) path."; exit 1; fi
-SCALE=${SCALE:-100}  # times 1M records
+SCALE=${SCALE:-2}  # times 1M records
 
 $PSQL $PGCONN -t -c "drop table if exists dots_uniform cascade; create table dots_uniform(id int, w int, h int, citus_distribution_id int);"
 

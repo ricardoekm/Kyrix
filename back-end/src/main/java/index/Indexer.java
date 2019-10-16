@@ -64,6 +64,9 @@ public abstract class Indexer implements Serializable {
                         else if (Config.indexingScheme
                                 == Config.IndexingScheme.PSQL_GRID_COMPRESSOR_INDEX)
                             indexer = PsqlGridCompressIndexer.getInstance();
+                        else if (Config.indexingScheme 
+                                == Config.IndexingScheme.PSQL_REGION_QUADTREE_INDEX)
+                            indexer = PsqlRegionQuadtreeIndexer.getInstance(isCitus);
                         else
                             throw new Exception(
                                     "Index type "

@@ -51,10 +51,11 @@ public class Config {
         PSQL_NATIVEBOX_INDEX,
         PSQL_NATIVECUBE_INDEX,
         MYSQL_SPATIAL_INDEX,
-        PSQL_GRID_COMPRESSOR_INDEX
+        PSQL_GRID_COMPRESSOR_INDEX,
+        PSQL_REGION_QUADTREE_INDEX
     };
 
-    public static IndexingScheme indexingScheme = IndexingScheme.PSQL_NATIVECUBE_INDEX;
+    public static IndexingScheme indexingScheme = IndexingScheme.PSQL_REGION_QUADTREE_INDEX;
 
     // underlying database
     public enum Database {

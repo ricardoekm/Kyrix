@@ -89,6 +89,14 @@ public abstract class Indexer implements Serializable {
                 l.setIndexer(indexer);
                 l.setIndexerType(indexer.getClass().getSimpleName());
 
+                System.out.println(
+                        "Canvas:"
+                                + c.getId()
+                                + " Layer:"
+                                + layerId
+                                + " Indexer:"
+                                + l.getIndexerType());
+
                 // pre-run getColumnNames, see issue #84: github.com/tracyhenry/kyrix/issues/84
                 l.getTransform().getColumnNames();
             }
@@ -98,7 +106,6 @@ public abstract class Indexer implements Serializable {
         if (type.isEmpty()) return null;
         Class c = Class.forName("index." + type);
         Method m = c.getMethod("getInstance");
-        System.out.println("Indexer type: " + c.getSimpleName());
         return (Indexer) m.invoke(null);
     }
 

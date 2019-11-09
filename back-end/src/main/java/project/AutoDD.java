@@ -9,7 +9,7 @@ import main.DbConnector;
 public class AutoDD {
 
     private String query, db;
-    private String xCol, yCol;
+    private String xCol, yCol, zCol;
     private int bboxW, bboxH;
     private String clusterMode;
     private ArrayList<String> columnNames, queriedColumnNames = null;
@@ -17,7 +17,7 @@ public class AutoDD {
     private int numLevels, topLevelWidth, topLevelHeight;
     private boolean overlap;
     private double zoomFactor;
-    private int xColId = -1, yColId = -1;
+    private int xColId = -1, yColId = -1, zColId = -1;
     private double loX = Double.NaN, loY, hiX, hiY;
 
     public String getQuery() {
@@ -34,6 +34,10 @@ public class AutoDD {
 
     public String getyCol() {
         return yCol;
+    }
+
+    public String getzCol() {
+        return zCol;
     }
 
     public int getBboxW() {
@@ -68,6 +72,15 @@ public class AutoDD {
             for (int i = 0; i < colNames.size(); i++) if (colNames.get(i).equals(yCol)) yColId = i;
         }
         return yColId;
+    }
+
+    public int getZColId() {
+
+        if (zColId < 0) {
+            ArrayList<String> colNames = getColumnNames();
+            for (int i = 0; i < colNames.size(); i++) if (colNames.get(i).equals(zCol)) zColId = i;
+        }
+        return zColId;
     }
 
     public ArrayList<String> getColumnNames() {
@@ -163,6 +176,9 @@ public class AutoDD {
                 + '\''
                 + ", yCol='"
                 + yCol
+                + '\''
+                + ", zCol='"
+                + zCol
                 + '\''
                 + ", bboxW="
                 + bboxW

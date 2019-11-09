@@ -320,8 +320,9 @@ function AutoDD(args) {
         this.query = this.query.slice(0, -1);
     this.query += " order by " + args.z.field + " " + args.z.order + ";";
     this.db = args.data.db;
-    this.xCol = args.x.field;
-    this.yCol = args.y.field;
+    this.xCol = getColName(args.x.field);
+    this.yCol = getColName(args.y.field);
+    this.zCol = getColName(args.z.field);
     this.clusterMode = args.marks.cluster.mode;
     this.aggDimensionFields = [];
     for (var i = 0; i < this.aggregateParams.aggDimensions.length; i++)
@@ -353,6 +354,15 @@ function AutoDD(args) {
     this.loY = args.y.extent != null ? args.y.extent[0] : null;
     this.hiX = args.x.extent != null ? args.x.extent[1] : null;
     this.hiY = args.y.extent != null ? args.y.extent[1] : null;
+}
+
+function getColName(str) {
+    var regex = /(?<=cast.*\(\s*?)\w*/gi;
+    if (!str.match(regex)) return str;
+    else {
+        var col = regex.exec(str)[0];
+        return col;
+    }
 }
 
 // get rendering function for an autodd layer based on cluster mode
@@ -692,6 +702,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
 
     function renderRadarBody() {
         if (!data || data.length == 0) return;
+        console.log("data: ", data);
         var params = args.renderingParams;
         var aggKeyDelimiter = "REPLACE_ME_agg_key_delimiter";
         var g = svg.append("g");

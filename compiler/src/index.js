@@ -277,6 +277,7 @@ function addAutoDD(autoDD, args) {
         autoDD.numLevels,
         args.pyramid ? args.pyramid.length : 1e10
     );
+    console.log("autoDD.legendParams: ", autoDD.legendParams);
     for (var i = 0; i < numLevels; i++) {
         var width = (autoDD.topLevelWidth * Math.pow(autoDD.zoomFactor, i)) | 0;
         var height =
@@ -315,7 +316,9 @@ function addAutoDD(autoDD, args) {
             curLayer.setFetchingScheme("dbox", false);
 
         // set isAutoDD and autoDD ID
-        curLayer.setIndexerType("AutoDDInMemoryIndexer");
+        // curLayer.setIndexerType("AutoDDInMemoryIndexer");
+        curLayer.setIndexerType("AutoDDBottomUpIndexer");
+
         curLayer.setAutoDDId(this.autoDDs.length - 1 + "_" + i);
 
         // dummy placement

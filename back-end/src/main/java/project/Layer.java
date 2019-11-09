@@ -65,7 +65,8 @@ public class Layer implements Serializable {
         String colListStr = "";
         for (String col : transform.getColumnNames())
             colListStr += (tableName.isEmpty() ? "" : tableName + ".") + col + ", ";
-        if (getIndexerType().equals("AutoDDInMemoryIndexer")) colListStr += "clusterAgg, ";
+        if (getIndexerType().equals("AutoDDInMemoryIndexer")
+                || getIndexerType().equals("AutoDDBottomUpIndexer")) colListStr += "clusterAgg, ";
         colListStr += "cx, cy, minx, miny, maxx, maxy";
         return colListStr;
     }

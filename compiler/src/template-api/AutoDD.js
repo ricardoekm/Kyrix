@@ -332,7 +332,7 @@ function AutoDD(args) {
     this.aggMeasureFields = [];
     for (var i = 0; i < this.aggregateParams.aggMeasures.length; i++)
         this.aggMeasureFields.push(this.aggregateParams.aggMeasures[i].field);
-    this.rendering =
+    this.clusterCustomRenderer =
         "custom" in args.marks.cluster ? args.marks.cluster.custom : null;
     this.columnNames = "columnNames" in args.data ? args.data.columnNames : [];
     this.numLevels = "numLevels" in args.config ? args.config.numLevels : 10;
@@ -1106,7 +1106,9 @@ function getLayerRenderer(level, autoDDArrayIndex) {
     var renderFuncBody;
     if (this.clusterMode == "custom") {
         renderFuncBody =
-            "(" + this.rendering.toString() + ")(svg, data, args);\n";
+            "(" +
+            this.clusterCustomRenderer.toString() +
+            ")(svg, data, args);\n";
         if (this.clusterParams.clusterCount)
             renderFuncBody += getBodyStringOfFunction(
                 renderObjectClusterNumBody

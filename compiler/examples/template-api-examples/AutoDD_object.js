@@ -35,8 +35,8 @@ var autoDD = {
     },
     marks: {
         cluster: {
-            mode: "object",
-            object: renderers.teamTimelineRendering,
+            mode: "custom",
+            custom: renderers.teamTimelineRendering,
             config: {
                 clusterCount: true,
                 bboxW: 162,

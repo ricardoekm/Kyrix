@@ -26,7 +26,7 @@ function AutoDD(args) {
             "Constructing AutoDD: cluster mode (marks.cluster.mode) missing."
         );
     var allClusterModes = new Set([
-        "object",
+        "custom",
         "circle",
         "contour",
         "heatmap",
@@ -160,11 +160,11 @@ function AutoDD(args) {
             "Constructing AutoDD: x extent and y extent must both be provided."
         );
     if (
-        args.marks.cluster.mode == "object" &&
-        !("object" in args.marks.cluster)
+        args.marks.cluster.mode == "custom" &&
+        !("custom" in args.marks.cluster)
     )
         throw new Error(
-            "Constructing AutoDD: object renderer (marks.cluster.object) missing."
+            "Constructing AutoDD: object renderer (marks.cluster.custom) missing."
         );
     if (
         "object" in args.marks.hover &&
@@ -176,7 +176,7 @@ function AutoDD(args) {
     if (
         (args.marks.cluster.mode == "radar" ||
             args.marks.cluster.mode == "circle" ||
-            args.marks.cluster.mode == "object") &&
+            args.marks.cluster.mode == "custom") &&
         args.marks.cluster.aggregate.dimensions.length > 0
     )
         throw new Error(
@@ -292,7 +292,7 @@ function AutoDD(args) {
     /****************
      * setting bboxes
      ****************/
-    if (args.marks.cluster.mode == "object") {
+    if (args.marks.cluster.mode == "custom") {
         if (
             !("bboxW" in args.marks.cluster.config) ||
             !("bboxH" in args.marks.cluster.config)
@@ -333,7 +333,7 @@ function AutoDD(args) {
     for (var i = 0; i < this.aggregateParams.aggMeasures.length; i++)
         this.aggMeasureFields.push(this.aggregateParams.aggMeasures[i].field);
     this.rendering =
-        "object" in args.marks.cluster ? args.marks.cluster.object : null;
+        "custom" in args.marks.cluster ? args.marks.cluster.custom : null;
     this.columnNames = "columnNames" in args.data ? args.data.columnNames : [];
     this.numLevels = "numLevels" in args.config ? args.config.numLevels : 10;
     this.topLevelWidth =
@@ -1104,7 +1104,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
     }
 
     var renderFuncBody;
-    if (this.clusterMode == "object") {
+    if (this.clusterMode == "custom") {
         renderFuncBody =
             "(" + this.rendering.toString() + ")(svg, data, args);\n";
         if (this.clusterParams.clusterCount)

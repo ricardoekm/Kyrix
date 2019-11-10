@@ -59,14 +59,12 @@ var autoDD = {
             convex: true
         }
     },
-    legend: {
-        title: "Age Groups of Soccer Players in FIFA 2019"
-        //domain: ["Under 20", "Under 23", "Under 29", "Older"]
-    },
     config: {
         topLevelWidth: 1500,
         topLevelHeight: 1000,
-        axis: true
+        axis: true,
+        legendTitle: "Age Groups of Soccer Players in FIFA 2019",
+        legendDomain: ["Under 20", "Under 23", "Under 29", "Older"]
     }
 };
 

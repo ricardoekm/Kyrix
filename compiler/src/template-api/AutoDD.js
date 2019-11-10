@@ -285,9 +285,9 @@ function AutoDD(args) {
     // TODO: legend params for different templates
     this.legendParams = {};
     this.legendParams.legendTitle =
-        "title" in args.legend ? args.legend.title : "Legend";
-    if ("domain" in args.legend)
-        this.legendParams.legendDomain = args.legend.domain;
+        "legendTitle" in args.config ? args.config.legendTitle : "Legend";
+    if ("legendDomain" in args.config)
+        this.legendParams.legendDomain = args.config.legendDomain;
 
     /****************
      * setting bboxes

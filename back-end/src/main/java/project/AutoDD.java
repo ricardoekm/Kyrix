@@ -8,14 +8,14 @@ import main.DbConnector;
 /** Created by wenbo on 3/31/19. */
 public class AutoDD {
 
-    private String query, db, rawTable;
+    private String query, db;
     private String xCol, yCol;
     private int bboxW, bboxH;
     private String clusterMode;
     private ArrayList<String> columnNames, queriedColumnNames = null;
     private ArrayList<String> aggDimensionFields, aggMeasureFields;
     private int numLevels, topLevelWidth, topLevelHeight;
-    private boolean overlap;
+    private double overlap;
     private double zoomFactor;
     private int xColId = -1, yColId = -1;
     private double loX = Double.NaN, loY, hiX, hiY;
@@ -48,7 +48,7 @@ public class AutoDD {
         return clusterMode;
     }
 
-    public boolean getOverlap() {
+    public double getOverlap() {
         return overlap;
     }
 
@@ -80,7 +80,7 @@ public class AutoDD {
             try {
                 queriedColumnNames = new ArrayList<>();
                 Statement rawDBStmt = DbConnector.getStmtByDbName(getDb(), true);
-                ResultSet rs = DbConnector.getQueryResultIterator(rawDBStmt, query);
+                ResultSet rs = DbConnector.getQueryResultIterator(rawDBStmt, getQuery());
                 int colCount = rs.getMetaData().getColumnCount();
                 for (int i = 1; i <= colCount; i++)
                     queriedColumnNames.add(rs.getMetaData().getColumnName(i));
@@ -115,35 +115,9 @@ public class AutoDD {
         return zoomFactor;
     }
 
-    public double getLoX() {
-        return loX;
-    }
-
-    public double getLoY() {
-        return loY;
-    }
-
-    public double getHiX() {
-        return hiX;
-    }
-
-    public double getHiY() {
-        return hiY;
-    }
-
     // get the canvas coordinate of a raw value
     public double getCanvasCoordinate(int level, double v, boolean isX) {
 
-        setXYExtent();
-        if (isX)
-            return ((topLevelWidth - bboxW) * (v - loX) / (hiX - loX) + bboxW / 2.0)
-                    * Math.pow(zoomFactor, level);
-        else
-            return ((topLevelHeight - bboxH) * (v - loY) / (hiY - loY) + bboxH / 2.0)
-                    * Math.pow(zoomFactor, level);
-    }
-
-    public void setXYExtent() {
         // calculate range if have not
         if (Double.isNaN(loX)) {
 
@@ -167,6 +141,12 @@ public class AutoDD {
                 e.printStackTrace();
             }
         }
+        if (isX)
+            return ((topLevelWidth - bboxW) * (v - loX) / (hiX - loX) + bboxW / 2.0)
+                    * Math.pow(zoomFactor, level);
+        else
+            return ((topLevelHeight - bboxH) * (v - loY) / (hiY - loY) + bboxH / 2.0)
+                    * Math.pow(zoomFactor, level);
     }
 
     @Override

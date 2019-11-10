@@ -342,13 +342,11 @@ function AutoDD(args) {
         "topLevelHeight" in args.config ? args.config.topLevelHeight : 1000;
     this.zoomFactor = "zoomFactor" in args.config ? args.config.zoomFactor : 2;
     this.overlap =
-        "overlap" in this.clusterParams
-            ? this.clusterParams.overlap
-                ? true
-                : false
+        "overlap" in args.layout
+            ? args.layout.overlap
             : this.clusterMode == "contour" || this.clusterMode == "heatmap"
-            ? true
-            : false;
+            ? 0
+            : 1;
     this.axis = "axis" in args.config ? args.config.axis : false;
     this.loX = args.layout.x.extent != null ? args.layout.x.extent[0] : null;
     this.loY = args.layout.y.extent != null ? args.layout.y.extent[0] : null;

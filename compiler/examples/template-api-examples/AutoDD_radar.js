@@ -21,17 +21,19 @@ var autoDD = {
         db: "fifa19",
         query: query
     },
-    x: {
-        field: "shooting",
-        extent: [0, 100]
-    },
-    y: {
-        field: "defending",
-        extent: [100, 0]
-    },
-    z: {
-        field: "cast(wage as int)",
-        order: "desc"
+    layout: {
+        x: {
+            field: "shooting",
+            extent: [0, 100]
+        },
+        y: {
+            field: "defending",
+            extent: [100, 0]
+        },
+        z: {
+            field: "cast(wage as int)",
+            order: "desc"
+        }
     },
     marks: {
         cluster: {

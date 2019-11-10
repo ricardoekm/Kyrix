@@ -82,12 +82,12 @@ function AutoDD(args) {
     var requiredArgs = [
         ["data", "query"],
         ["data", "db"],
-        ["x", "field"],
-        ["x", "extent"],
-        ["y", "field"],
-        ["y", "extent"],
-        ["z", "field"],
-        ["z", "order"]
+        ["layout", "x", "field"],
+        ["layout", "x", "extent"],
+        ["layout", "y", "field"],
+        ["layout", "y", "extent"],
+        ["layout", "z", "field"],
+        ["layout", "z", "order"]
     ];
     var requiredArgsTypes = [
         "string",
@@ -130,31 +130,31 @@ function AutoDD(args) {
      * other constraints
      *******************/
     if (
-        args.x.extent != null &&
-        (!Array.isArray(args.x.extent) ||
-            args.x.extent.length != 2 ||
-            typeof args.x.extent[0] != "number" ||
-            typeof args.x.extent[1] != "number")
+        args.layout.x.extent != null &&
+        (!Array.isArray(args.layout.x.extent) ||
+            args.layout.x.extent.length != 2 ||
+            typeof args.layout.x.extent[0] != "number" ||
+            typeof args.layout.x.extent[1] != "number")
     )
         throw new Error("Constructing AutoDD: malformed x.extent");
     if (
-        args.y.extent != null &&
-        (!Array.isArray(args.y.extent) ||
-            args.y.extent.length != 2 ||
-            typeof args.y.extent[0] != "number" ||
-            typeof args.y.extent[1] != "number")
+        args.layout.y.extent != null &&
+        (!Array.isArray(args.layout.y.extent) ||
+            args.layout.y.extent.length != 2 ||
+            typeof args.layout.y.extent[0] != "number" ||
+            typeof args.layout.y.extent[1] != "number")
     )
         throw new Error("Constructing AutoDD: malformed y.extent");
     if (
         "axis" in args.marks &&
-        (args.x.extent == null || args.y.extent == null)
+        (args.layout.x.extent == null || args.layout.y.extent == null)
     )
         throw new Error(
             "Constructing AutoDD: raw data domain needs to be specified for rendering an axis."
         );
     if (
-        (args.x.extent != null && args.y.extent == null) ||
-        (args.x.extent == null && args.y.extent != null)
+        (args.layout.x.extent != null && args.layout.y.extent == null) ||
+        (args.layout.x.extent == null && args.layout.y.extent != null)
     )
         throw new Error(
             "Constructing AutoDD: x extent and y extent must both be provided."
@@ -318,10 +318,11 @@ function AutoDD(args) {
     this.query = args.data.query;
     while (this.query.slice(-1) == " " || this.query.slice(-1) == ";")
         this.query = this.query.slice(0, -1);
-    this.query += " order by " + args.z.field + " " + args.z.order + ";";
+    this.query +=
+        " order by " + args.layout.z.field + " " + args.layout.z.order + ";";
     this.db = args.data.db;
-    this.xCol = args.x.field;
-    this.yCol = args.y.field;
+    this.xCol = args.layout.x.field;
+    this.yCol = args.layout.y.field;
     this.clusterMode = args.marks.cluster.mode;
     this.aggDimensionFields = [];
     for (var i = 0; i < this.aggregateParams.aggDimensions.length; i++)
@@ -349,10 +350,10 @@ function AutoDD(args) {
             ? true
             : false;
     this.axis = "axis" in args.config ? args.config.axis : false;
-    this.loX = args.x.extent != null ? args.x.extent[0] : null;
-    this.loY = args.y.extent != null ? args.y.extent[0] : null;
-    this.hiX = args.x.extent != null ? args.x.extent[1] : null;
-    this.hiY = args.y.extent != null ? args.y.extent[1] : null;
+    this.loX = args.layout.x.extent != null ? args.layout.x.extent[0] : null;
+    this.loY = args.layout.y.extent != null ? args.layout.y.extent[0] : null;
+    this.hiX = args.layout.x.extent != null ? args.layout.x.extent[1] : null;
+    this.hiY = args.layout.y.extent != null ? args.layout.y.extent[1] : null;
 }
 
 // get rendering function for an autodd layer based on cluster mode

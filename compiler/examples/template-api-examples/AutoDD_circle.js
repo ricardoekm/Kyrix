@@ -19,17 +19,19 @@ var autoDD = {
         db: "nba",
         query: query
     },
-    x: {
-        field: "home_score",
-        extent: [69, 149]
-    },
-    y: {
-        field: "away_score",
-        extent: [69, 148]
-    },
-    z: {
-        field: "agg_rank",
-        order: "asc"
+    layout: {
+        x: {
+            field: "home_score",
+            extent: [69, 149]
+        },
+        y: {
+            field: "away_score",
+            extent: [69, 148]
+        },
+        z: {
+            field: "agg_rank",
+            order: "asc"
+        }
     },
     marks: {
         cluster: {

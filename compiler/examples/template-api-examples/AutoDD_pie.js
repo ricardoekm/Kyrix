@@ -55,8 +55,15 @@ var autoDD = {
             }
         },
         hover: {
-            object: renderers.playerRendering,
-            convex: true
+            rankList: {
+                mode: "custom",
+                custom: renderers.playerRendering,
+                config: {
+                    bboxW: 180,
+                    bboxH: 240
+                }
+            },
+            boundary: "convexhull"
         }
     },
     config: {

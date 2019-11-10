@@ -42,7 +42,14 @@ var autoDD = {
             }
         },
         hover: {
-            object: renderers.teamTimelineRendering
+            rankList: {
+                mode: "custom",
+                custom: renderers.teamTimelineRendering,
+                config: {
+                    bboxW: 162,
+                    bboxH: 132
+                }
+            }
         }
     },
     config: {

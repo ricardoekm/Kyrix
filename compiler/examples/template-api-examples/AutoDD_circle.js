@@ -42,8 +42,12 @@ var autoDD = {
             }
         },
         hover: {
-            object: renderers.teamTimelineRendering
-            // convex: true
+            rankList: {
+                mode: "tabular",
+                fields: ["home_team", "away_team", "home_score", "away_score"],
+                topk: 3
+            }
+            // boundary: "convexhull"
         }
     },
     config: {

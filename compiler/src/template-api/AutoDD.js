@@ -164,14 +164,7 @@ function AutoDD(args) {
         !("custom" in args.marks.cluster)
     )
         throw new Error(
-            "Constructing AutoDD: object renderer (marks.cluster.custom) missing."
-        );
-    if (
-        "custom" in args.marks.hover &&
-        typeof args.marks.hover.custom != "function"
-    )
-        throw new Error(
-            "Constructing AutoDD: hover object renderer (marks.cluster.hover.custom) is not a function."
+            "Constructing AutoDD: custom cluster renderer (marks.cluster.custom) missing."
         );
     if (
         (args.marks.cluster.mode == "radar" ||
@@ -215,6 +208,50 @@ function AutoDD(args) {
         throw new Error(
             "Constructing AutoDD: there must be exactly 1 aggregate measure for pie charts."
         );
+    if ("rankList" in args.marks.hover) {
+        if (!("mode" in args.marks.hover.rankList))
+            throw new Error(
+                "Constructing AutoDD: hover rankList mode (marks.hover.rankList.mode) is missing."
+            );
+        if (args.marks.hover.rankList.mode == "custom") {
+            if (!("custom" in args.marks.hover.rankList))
+                throw new Error(
+                    "Constructing AutoDD: custom hover rankList renderer (marks.hover.rankList.custom) is missing."
+                );
+            if (
+                !("config" in args.marks.hover.rankList) ||
+                !("bboxH" in args.marks.hover.rankList.config) ||
+                !("bboxW" in args.marks.hover.rankList.config)
+            )
+                throw new Error(
+                    "Constructing AutoDD: custom hover ranklist bounding box size missing."
+                );
+        }
+
+        if (
+            args.marks.hover.rankList.mode == "tabular" &&
+            !("fields" in args.marks.hover.rankList)
+        )
+            throw new Error(
+                "Constructing AutoDD: fields for tabular hover rankList (marks.hover.rankList.fields) is missing."
+            );
+    }
+    if (
+        "custom" in args.marks.hover.rankList &&
+        typeof args.marks.hover.rankList.custom != "function"
+    )
+        throw new Error(
+            "Constructing AutoDD: hover object renderer (marks.cluster.hover.rankList.custom) is not a function."
+        );
+    if ("boundary" in args.marks.hover)
+        if (
+            !(args.marks.hover.boundary == "convexhull") &&
+            !(args.marks.hover.boundary == "bbox")
+        )
+            throw new Error(
+                "Constructing AutoDD: unrecognized hover boundary type " +
+                    args.marks.hover.boundary
+            );
 
     /************************
      * setting cluster params
@@ -279,6 +316,46 @@ function AutoDD(args) {
         for (var i = pos + 1; i < dimensions.length; i++) pointers[i] = 0;
     }
 
+    /************************
+     * setting hover params
+     ************************/
+    this.hoverParams = {};
+    if ("rankList" in args.marks.hover) {
+        // get in everything in config
+        if ("config" in args.marks.hover.rankList)
+            this.hoverParams = args.marks.hover.rankList.config;
+
+        // mode: currently either tabular or custom
+        this.hoverParams.hoverRankListMode = args.marks.hover.rankList.mode;
+
+        // table fields
+        if (args.marks.hover.rankList.mode == "tabular")
+            this.hoverParams.hoverTableFields =
+                args.marks.hover.rankList.fields;
+
+        // custom topk renderer
+        if (args.marks.hover.rankList.mode == "custom")
+            this.hoverParams.hoverCustomRenderer =
+                args.marks.hover.rankList.custom;
+
+        // topk is 1 by default if unspecified
+        this.hoverParams.topk =
+            "topk" in args.marks.hover.rankList
+                ? args.marks.hover.rankList.topk
+                : 1;
+
+        // less important cosmetic parameters are in marks.hover.rankList.config
+        // and we set default values here if unspecified:
+        setPropertiesIfNotExists(this.hoverParams, {
+            hoverRankListOrientation: "vertical" // by default, table rows are stacked vertically
+            // hoverTableCellWidth: 100  <-- change
+            // hoverTableCellHeight: 50  <-- change
+        });
+    }
+    if ("boundary" in args.marks.hover)
+        this.hoverParams.hoverBoundary = args.marks.hover.boundary;
+    console.log(this.hoverParams);
+
     /***************************
      * setting legend parameters
      ***************************/
@@ -312,9 +389,6 @@ function AutoDD(args) {
     else if (args.marks.cluster.mode == "pie") this.bboxW = this.bboxH = 290; // tuned by hand :)
 
     // assign other fields
-    this.hover = args.marks.hover;
-    setPropertiesIfNotExists(this.hover, {convex: false, object: null});
-    this.isHover = this.hover.object != null || this.hover.convex;
     this.query = args.data.query;
     while (this.query.slice(-1) == " " || this.query.slice(-1) == ";")
         this.query = this.query.slice(0, -1);
@@ -509,42 +583,40 @@ function getLayerRenderer(level, autoDDArrayIndex) {
                 "translate(" + (x - radius) + " " + (y - radius) + ")"
             );
 
-        var isHover = REPLACE_ME_is_hover;
-        if (isHover) {
-            g.attr("fill", "none")
-                .attr("stroke", "black")
-                .attr("stroke-opacity", 0)
-                .attr("stroke-linejoin", "round")
-                .selectAll("path")
-                .data(contours)
-                .enter()
-                .append("path")
-                .attr("d", d3.geoPath())
-                .style("fill", d => color(d.value))
-                .style("opacity", params.contourOpacity);
-        } else {
-            var canvas = document.createElement("canvas");
-            var ctx = canvas.getContext("2d");
-            (canvas.width = contourWidth), (canvas.height = contourHeight);
-            g.append("foreignObject")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("width", contourWidth)
-                .attr("height", contourHeight)
-                .style("overflow", "auto")
-                .node()
-                .appendChild(canvas);
-            d3.select(canvas).style("opacity", REPLACE_ME_CONTOUR_OPACITY);
-            var path = d3.geoPath().context(ctx);
-            for (var i = 0; i < contours.length; i++) {
-                var contour = contours[i];
-                var threshold = contour.value;
-                ctx.beginPath(),
-                    (ctx.fillStyle = color(threshold)),
-                    path(contour),
-                    ctx.fill();
-            }
-        }
+        g.attr("fill", "none")
+            .attr("stroke", "black")
+            .attr("stroke-opacity", 0)
+            .attr("stroke-linejoin", "round")
+            .selectAll("path")
+            .data(contours)
+            .enter()
+            .append("path")
+            .attr("d", d3.geoPath())
+            .style("fill", d => color(d.value))
+            .style("opacity", params.contourOpacity);
+
+        ///////////////// uncomment the following for rendering using canvas
+        // var canvas = document.createElement("canvas");
+        // var ctx = canvas.getContext("2d");
+        // (canvas.width = contourWidth), (canvas.height = contourHeight);
+        // g.append("foreignObject")
+        //     .attr("x", 0)
+        //     .attr("y", 0)
+        //     .attr("width", contourWidth)
+        //     .attr("height", contourHeight)
+        //     .style("overflow", "auto")
+        //     .node()
+        //     .appendChild(canvas);
+        // d3.select(canvas).style("opacity", REPLACE_ME_CONTOUR_OPACITY);
+        // var path = d3.geoPath().context(ctx);
+        // for (var i = 0; i < contours.length; i++) {
+        //     var contour = contours[i];
+        //     var threshold = contour.value;
+        //     ctx.beginPath(),
+        //         (ctx.fillStyle = color(threshold)),
+        //         path(contour),
+        //         ctx.fill();
+        // }
     }
 
     function renderHeatmapBody() {
@@ -1029,7 +1101,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
     }
 
     function regularHoverBody() {
-        function showConvex(svg, d) {
+        function convexRenderer(svg, d) {
             var line = d3
                 .line()
                 .x(d => d.x)
@@ -1038,7 +1110,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
             g.append("path")
                 .datum(d)
                 .attr("class", "convexHull")
-                .attr("id", "autodd_convexHull")
+                .attr("id", "autodd_boundary_hover")
                 .attr("d", d => line(d.convexHull))
                 .style("fill-opacity", 0)
                 .style("stroke-width", 3)
@@ -1046,29 +1118,65 @@ function getLayerRenderer(level, autoDDArrayIndex) {
                 .style("stroke", "grey")
                 .style("pointer-events", "none");
         }
-        var objectRenderer = REPLACE_ME_this_rendering;
-        g.selectAll(hoverSelector)
-            .on("mouseover", function(d) {
-                if (REPLACE_ME_show_convex) showConvex(svg, d);
-                objectRenderer(svg, [d], args);
-                svg.selectAll("g:last-of-type")
-                    .attr("id", "autodd_tooltip")
-                    .style("opacity", 0.8)
-                    .style("pointer-events", "none")
-                    .selectAll("*")
-                    .classed("kyrix-retainsizezoom", true)
-                    .each(function() {
-                        zoomRescale(args.viewId, this);
-                    });
-            })
-            .on("mouseleave", function() {
-                d3.selectAll("#autodd_tooltip").remove();
-                d3.selectAll("#autodd_convexHull").remove();
-            });
+
+        function bboxRenderer(svg, d) {
+            // bbox renderer here....
+        }
+
+        function tabularRankListRenderer(svg, data, args) {
+            // tabular renderer here....
+        }
+
+        // ranklist
+        if ("hoverRankListMode" in params) {
+            var rankListRenderer;
+            if (params.rankListMode == "tabular")
+                rankListRenderer = tabularRankListRenderer;
+            else rankListRenderer = params.hoverCustomRenderer;
+            g.selectAll(hoverSelector)
+                .on("mouseover.ranklist", function(d) {
+                    // deal with top-k here
+                    // run rankListRenderer for each of the top-k
+                    // for tabular renderer, you'd need to add a header first
+                    // use params.hoverRankListOrientation for deciding layout
+                    // use params.bboxH(W) for bounding box size
+
+                    // uncomment the following line to renderer top1 custom
+                    // rankListRenderer(svg, [d], args);
+
+                    svg.selectAll("g:last-of-type")
+                        .attr("id", "autodd_ranklist_hover")
+                        .style("opacity", 0.8)
+                        .style("pointer-events", "none")
+                        .selectAll("*")
+                        .classed("kyrix-retainsizezoom", true)
+                        .each(function() {
+                            zoomRescale(args.viewId, this);
+                        });
+                })
+                .on("mouseleave.ranklist", function() {
+                    d3.selectAll("#autodd_ranklist_hover").remove();
+                });
+        }
+
+        // boundary
+        if ("hoverBoundary" in params)
+            g.selectAll(hoverSelector)
+                .on("mouseover.boundary", function(d) {
+                    if (params.hoverBoundary == "convexhull")
+                        convexRenderer(svg, d);
+                    else if (params.hoverBoundary == "bbox")
+                        bboxRenderer(svg, d);
+                })
+                .on("mouseleave.boundary", function() {
+                    d3.selectAll("#autodd_boundary_hover").remove();
+                });
     }
 
     function KDEObjectHoverBody() {
-        var objectRenderer = REPLACE_ME_this_rendering;
+        // no topk for about KDE for now
+        var objectRenderer = params.hoverCustomRenderer;
+        if (objectRenderer == null) return;
         var hiddenRectSize = 100;
         svg.append("g")
             .selectAll("rect")
@@ -1115,71 +1223,33 @@ function getLayerRenderer(level, autoDDArrayIndex) {
             );
     } else if (this.clusterMode == "circle") {
         // render circle
-        renderFuncBody = getBodyStringOfFunction(renderCircleBody)
-            .replace(
-                /REPLACE_ME_this_rendering/g,
-                this.hover.object != null
-                    ? this.hover.object.toString()
-                    : "null;"
-            )
-            .replace(
-                /REPLACE_ME_processClusterAgg/g,
-                "(" + processClusterAgg.toString() + ")"
-            );
-        if (this.isHover)
-            renderFuncBody += getBodyStringOfFunction(regularHoverBody)
-                .replace(
-                    /REPLACE_ME_this_rendering/g,
-                    this.hover.object.toString()
-                )
-                .replace(/REPLACE_ME_show_convex/g, this.hover.convex);
+        renderFuncBody = getBodyStringOfFunction(renderCircleBody).replace(
+            /REPLACE_ME_processClusterAgg/g,
+            "(" + processClusterAgg.toString() + ")"
+        );
+        renderFuncBody += getBodyStringOfFunction(regularHoverBody);
     } else if (this.clusterMode == "contour") {
-        renderFuncBody = getBodyStringOfFunction(renderContourBody)
-            .replace(/REPLACE_ME_radius/g, this.bboxH)
-            .replace(/REPLACE_ME_is_hover/g, this.isHover);
-        if (this.isHover)
-            renderFuncBody += getBodyStringOfFunction(
-                KDEObjectHoverBody
-            ).replace(
-                /REPLACE_ME_this_rendering/g,
-                this.hover.object.toString()
-            );
+        renderFuncBody = getBodyStringOfFunction(renderContourBody).replace(
+            /REPLACE_ME_radius/g,
+            this.bboxH
+        );
+        renderFuncBody += getBodyStringOfFunction(KDEObjectHoverBody);
     } else if (this.clusterMode == "heatmap") {
         renderFuncBody = getBodyStringOfFunction(renderHeatmapBody).replace(
             /REPLACE_ME_autoDDId/g,
             autoDDArrayIndex + "_" + level
         );
-        if (this.isHover)
-            renderFuncBody += getBodyStringOfFunction(
-                KDEObjectHoverBody
-            ).replace(
-                /REPLACE_ME_this_rendering/g,
-                this.hover.object.toString()
-            );
+        renderFuncBody += getBodyStringOfFunction(KDEObjectHoverBody);
     } else if (this.clusterMode == "radar") {
         renderFuncBody = getBodyStringOfFunction(renderRadarBody)
-            .replace(
-                /REPLACE_ME_this_rendering/g,
-                this.hover.object ? this.hover.object.toString() : "null;"
-            )
             .replace(
                 /REPLACE_ME_processClusterAgg/g,
                 "(" + processClusterAgg.toString() + ")"
             )
             .replace(/REPLACE_ME_agg_key_delimiter/g, aggKeyDelimiter);
-        if (this.isHover)
-            renderFuncBody += getBodyStringOfFunction(regularHoverBody)
-                .replace(
-                    /REPLACE_ME_this_rendering/g,
-                    this.hover.object.toString()
-                )
-                .replace(/REPLACE_ME_show_convex/g, this.hover.convex);
+        renderFuncBody += getBodyStringOfFunction(regularHoverBody);
     } else if (this.clusterMode == "pie") {
         renderFuncBody = getBodyStringOfFunction(renderPieBody)
-            .replace(
-                /REPLACE_ME_this_rendering/g,
-                this.hover.object ? this.hover.object.toString() : "null;"
-            )
             .replace(
                 /REPLACE_ME_processClusterAgg/g,
                 "(" + processClusterAgg.toString() + ")"
@@ -1191,13 +1261,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
                 translatePathSegments.toString()
             )
             .replace(/REPLACE_ME_serialize_func/g, serializePath.toString());
-        if (this.isHover)
-            renderFuncBody += getBodyStringOfFunction(regularHoverBody)
-                .replace(
-                    /REPLACE_ME_this_rendering/g,
-                    this.hover.object.toString()
-                )
-                .replace(/REPLACE_ME_show_convex/g, this.hover.convex);
+        renderFuncBody += getBodyStringOfFunction(regularHoverBody);
     }
     return new Function("svg", "data", "args", renderFuncBody);
 }

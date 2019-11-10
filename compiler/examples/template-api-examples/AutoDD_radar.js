@@ -61,8 +61,17 @@ var autoDD = {
             }
         },
         hover: {
-            object: renderers.playerRendering,
-            convex: true
+            rankList: {
+                mode: "custom",
+                custom: renderers.playerRendering,
+                topk: 3,
+                config: {
+                    hoverRankListOrientation: "horizontal",
+                    bboxW: 180,
+                    bboxH: 240
+                }
+            },
+            boundary: "convexhull"
         }
     },
     config: {

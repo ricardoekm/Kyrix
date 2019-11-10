@@ -167,11 +167,11 @@ function AutoDD(args) {
             "Constructing AutoDD: object renderer (marks.cluster.custom) missing."
         );
     if (
-        "object" in args.marks.hover &&
-        typeof args.marks.hover.object != "function"
+        "custom" in args.marks.hover &&
+        typeof args.marks.hover.custom != "function"
     )
         throw new Error(
-            "Constructing AutoDD: hover object renderer (marks.cluster.hover.object) is not a function."
+            "Constructing AutoDD: hover object renderer (marks.cluster.hover.custom) is not a function."
         );
     if (
         (args.marks.cluster.mode == "radar" ||

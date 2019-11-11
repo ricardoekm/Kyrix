@@ -1058,10 +1058,48 @@ function getLayerRenderer(level, autoDDArrayIndex) {
                 .style("stroke", "grey")
                 .style("pointer-events", "none");
         }
+        function showTable(svg, d) {
+            console.log("showTable: ", d);
+            svg.attr("xmlns", "http://www.w3.org/2000/svg");
+            svg.attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml");
+            var g = svg.append("g").attr("id", "autodd_table");
+            /*<foreignObject x="10" y="10" width="100" height="150">
+    <body xmlns="http://www.w3.org/1999/xhtml">
+      <table><!-- ... --></table>
+    </body>
+  </foreignObject>*/
+            var fo = g
+                .append("foreignObject")
+                .attr("x", +d.minx)
+                .attr("y", +d.miny)
+                .attr("width", 100)
+                .attr("height", 150)
+                .attr("pointer-events", "none");
+            var html = fo
+                .append("html")
+                .attr("xmlns", "http://www.w3.org/1999/xhtml");
+            html.append("xhtml:head")
+                .append("xhtml:link")
+                .attr("type", "text/css")
+                .attr(
+                    "href",
+                    "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+                )
+                .attr("rel", "stylesheet");
+            var bo = html.append("xhtml:body");
+            var table = bo
+                .append("xhtml:table")
+                .attr("class", "table")
+                .attr("width", "100%")
+                .attr("height", "100%");
+            var tr = table.append("xhtml:tr");
+            for (var i = 0; i < 5; i++) tr.append("xhtml:td").text("i:" + i);
+        }
         var objectRenderer = REPLACE_ME_this_rendering;
         g.selectAll(hoverSelector)
             .on("mouseover", function(d) {
                 if (REPLACE_ME_show_convex) showConvex(svg, d);
+                showTable(svg, d);
                 objectRenderer(svg, [d], args);
                 svg.selectAll("g:last-of-type")
                     .attr("id", "autodd_tooltip")
@@ -1076,6 +1114,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
             .on("mouseleave", function() {
                 d3.selectAll("#autodd_tooltip").remove();
                 d3.selectAll("#autodd_convexHull").remove();
+                d3.selectAll("#autodd_table").remove();
             });
     }
 

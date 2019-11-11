@@ -3,6 +3,7 @@ package project;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import main.DbConnector;
 
 /** Created by wenbo on 3/31/19. */
@@ -160,6 +161,13 @@ public class AutoDD {
         else
             return ((topLevelHeight - bboxH) * (v - loY) / (hiY - loY) + bboxH / 2.0)
                     * Math.pow(zoomFactor, level);
+    }
+
+    public ArrayList<Double> getRange(int level) {
+        // return new ArrayList<>(Arrays.asList(loX, loY, hiX, hiY));
+        double rangeX = (topLevelWidth - bboxW / 2.0) * Math.pow(zoomFactor, level);
+        double rangeY = (topLevelHeight - bboxH / 2.0) * Math.pow(zoomFactor, level);
+        return new ArrayList<>(Arrays.asList(rangeX, rangeY));
     }
 
     @Override

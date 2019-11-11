@@ -38,6 +38,9 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
     private ArrayList<ArrayList<String>> rawRows;
     private AutoDD autoDD;
     private transient PrintStream p;
+    private int wrongCountAll;
+    private double distanceAll;
+    private int countAll;
 
     // singleton pattern to ensure only one instance existed
     private AutoDDBottomUpIndexer() {
@@ -109,6 +112,9 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
 
         for (int i = numLevels; i >= 0; i--) {
             // sample to higher level
+            wrongCountAll = 0;
+            countAll = 0;
+            distanceAll = 0;
             sampleForLevel(i - 1, autoDDIndex);
 
             // all samples
@@ -176,39 +182,21 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
                 nnAggMap = gson.fromJson(nnAggStr, HashMap.class);
                 int wrongCount =
                         mergeClusterAgg(nnAggMap, curClusterAgg, i - 1, nnCx, nnCy, curRow);
-                double countA = Double.valueOf(nnAggMap.get("count(*)"));
-                double wrong = Double.valueOf(nnAggMap.get("wrong"));
-                double ratio = (wrong / countA) * 100;
-                if (ratio >= 0) {
-                    System.out.println(
-                            "level:"
-                                    + i
-                                    + " "
-                                    + curRow.get(0)
-                                    + "\t"
-                                    + nearestNeighbor.get(0)
-                                    + "\t countA: "
-                                    + countA
-                                    + " wrong: "
-                                    + wrong
-                                    + " ratio:"
-                                    + ratio
-                                    + "%");
-                    p.println(
-                            "level: "
-                                    + i
-                                    + " cur:"
-                                    + curRow.get(0)
-                                    + "\t NN:"
-                                    + nearestNeighbor.get(0)
-                                    + "\t countA: "
-                                    + countA
-                                    + " wrong: "
-                                    + wrong
-                                    + " ratio:"
-                                    + ratio
-                                    + "%");
-                }
+                // double countA = Double.valueOf(nnAggMap.get("count(*)"));
+                // double wrong = Double.valueOf(nnAggMap.get("wrong"));
+                // double ratio = (wrong / countA) * 100;
+                // if (ratio >= 0){
+                //     System.out.println("level:" + i + " "
+                //         + curRow.get(0)
+                //         + "\t"
+                //         + nearestNeighbor.get(0)
+                //         + "\t countA: " + countA
+                //         + " wrong: " + wrong + " ratio:" + ratio + "%");
+                //     p.println("level: " + i + " cur:" + curRow.get(0)
+                //         + "\t NN:" + nearestNeighbor.get(0)
+                //         + "\t countA: " + countA
+                //         + " wrong: " + wrong + " ratio:" + ratio + "%");
+                // }
                 nearestNeighbor.set(numRawColumns, gson.toJson(nnAggMap));
             }
 
@@ -217,6 +205,23 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
                 curAutoDDId = String.valueOf(autoDDIndex) + "_" + String.valueOf(i);
                 Main.getProject().addBGRP(curAutoDDId + "_minWeight", String.valueOf(minWeight));
                 Main.getProject().addBGRP(curAutoDDId + "_maxWeight", String.valueOf(maxWeight));
+            }
+
+            if (countAll > 0) {
+                // java.text.DecimalFormat   df   =new   java.text.DecimalFormat("#.00");
+                ArrayList<Double> ranges = autoDD.getRange(i);
+                double rangeD =
+                        Math.sqrt(ranges.get(0) * ranges.get(0) + ranges.get(1) * ranges.get(1));
+                double nnm = 1.0 - distanceAll / (countAll * rangeD);
+                // String avgDistance = df.format();
+                // String avgDistance = df.format(1 - distanceAll/(countAll * rangeD));
+                System.out.println("level " + i + " average distance:" + nnm);
+                p.println("level " + i + " average distance:" + nnm);
+                // String ratio = df.format((double)wrongCountAll * 100 / (double)countAll);
+                // String info = "level " + i + " wrong:" + wrongCountAll + " count:" + countAll
+                //     + " ratio:" + ratio + "%";
+                // p.println(info);
+                // System.out.println(info);
             }
         }
 
@@ -515,10 +520,10 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
             ArrayList<String> curRow) {
 
         // count(*)
+        int childCount = Integer.valueOf(child.get("count(*)"));
         if (!parent.containsKey("count(*)")) parent.put("count(*)", child.get("count(*)"));
         else {
             int parentCount = Integer.valueOf(parent.get("count(*)"));
-            int childCount = Integer.valueOf(child.get("count(*)"));
             parent.put("count(*)", String.valueOf(parentCount + childCount));
         }
 
@@ -546,7 +551,6 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
             parentCentroids = gson.fromJson(parent.get("centroids"), ArrayList.class);
             parentCentroids.addAll(childCentroids);
             String mergedCentroids = gson.toJson(parentCentroids);
-
             parent.put("centroids", mergedCentroids);
         }
 
@@ -557,30 +561,36 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
             double curCy = childCentroids.get(i + 1);
             double nnDistance =
                     Math.sqrt((nnCx - curCx) * (nnCx - curCx) + (nnCy - curCy) * (nnCy - curCy));
-            Iterable<Entry<ArrayList<String>, Rectangle>> vicinity =
-                    Rtrees.get(level)
-                            .search(Geometries.point(curCx, curCy), nnDistance)
-                            .toBlocking()
-                            .toIterable();
+            distanceAll += nnDistance;
+
+            // Iterable<Entry<ArrayList<String>, Rectangle>> vicinity =
+            //         Rtrees.get(level)
+            //                 .search(Geometries.point(curCx, curCy), nnDistance)
+            //                 .toBlocking()
+            //                 .toIterable();
             // if only two (nn and it self, then it's right, otherwis it's wrong)
-            int curCount = 0;
-            for (Entry<ArrayList<String>, Rectangle> v : vicinity) {
-                curCount++;
-                ArrayList<Double> vc = getCentroid(v.value(), level);
-                double vcx = vc.get(0);
-                double vcy = vc.get(1);
-                double d = Math.sqrt((vcx - curCx) * (vcx - curCx) + (vcy - curCy) * (vcy - curCy));
-                if (d < nnDistance) {
-                    wrongCount++;
-                    break;
-                }
-            }
+            // int curCount = 0;
+            // for (Entry<ArrayList<String>, Rectangle> v : vicinity) {
+            //     curCount ++;
+            //     ArrayList<Double> vc = getCentroid(v.value(), level);
+            //     double vcx = vc.get(0);
+            //     double vcy = vc.get(1);
+            //     double d = Math.sqrt((vcx - curCx) * (vcx - curCx) + (vcy - curCy) * (vcy -
+            // curCy));
+            //     if (d < nnDistance){
+            //         wrongCount ++;
+            //         break;
+            //     }
+            // }
         }
         if (!parent.containsKey("wrong")) parent.put("wrong", String.valueOf(wrongCount));
         else {
             int parentCount = Integer.valueOf(parent.get("wrong"));
             parent.put("wrong", String.valueOf(parentCount + wrongCount));
         }
+
+        wrongCountAll += wrongCount;
+        countAll += childCount;
 
         // numeric aggregations
         for (String aggKey : child.keySet()) {

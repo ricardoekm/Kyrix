@@ -190,7 +190,8 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
                         + " where v && ";
         sql += cubeNew;
         if (predicate.length() > 0) sql += " and " + predicate + ";";
-        else sql += ";";
+        else sql += ";";        
+
         System.out.println(sql);
 
         ArrayList<ArrayList<String>> queryResult =

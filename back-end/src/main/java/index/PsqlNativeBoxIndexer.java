@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.function.*;
+import java.util.Collections;
 import jdk.nashorn.api.scripting.NashornScriptEngine;
 import main.Config;
 import main.DbConnector;
@@ -66,6 +67,8 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
         String sql = "drop table if exists " + bboxTableName + ";";
         System.out.println(sql);
         dropCreateStmt.executeUpdate(sql);
+
+        
 
         // create the bbox table
         // yes, citus supports unlogged tables!
@@ -383,6 +386,10 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
                         + (isCitus ? " in parallel" : ""));
         startTs = currTs;
 
+
+        makeZOrderTable(bboxTableName, trans, l, isCitus);
+
+
         // create index - gist/spgist require logged table type
         // TODO: consider sp-gist
         Statement createIndexStmt = DbConnector.getStmtByDbName(Config.databaseName);
@@ -406,6 +413,75 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
         sql = "cluster " + bboxTableName + " using sp_" + bboxTableName + ";";
         System.out.println(sql);
         clusterStatement.executeUpdate(sql);
+
+        
+    }
+
+    public void makeZOrderTable(String bboxTable, Transform trans, Layer l, Boolean isCitus) throws Exception {
+        // TODO: store the data in a format to pass to zorder
+        // TODO: implement zorder so it sorts by lower left point's representation
+        // TODO: figure out how to drop table and re-insert data according to new order
+        // get raw data from the table, print col names first
+        ArrayList<String> colListStr = trans.getColumnNames();
+        ArrayList<KyrixRow> transformedRows = new ArrayList<>();
+        int numberCols = colListStr.size();
+        System.out.println("col names are: " + colListStr.toString());
+        String sql = "select * from " + bboxTable + " ;";
+        System.out.println("Getting data from table sql query: " + sql);
+        ArrayList<ArrayList<String>> results = DbConnector.getQueryResult(Config.databaseName, sql);
+        System.out.println("results size is: " + results.size() + " should be: 50");
+        // StringBuilder originalRowsData = new StringBuilder();
+        for(int i = 0; i < results.size(); i++) {
+        //   for(int j=0; j<results.get(i).size(); j++) {
+        //     System.out.println("result: " + results.get(i).get(j));
+        //   }
+          KyrixRow currentRow = new KyrixRow(colListStr, results.get(i), isCitus);
+          // originalRowsData.append(currentRow.toString());
+          transformedRows.add(currentRow);
+        }
+
+        // System.out.println("the data before sorting is: ");
+        // System.out.print(originalRowsData);
+        // sort with custom zorder comparator function
+        Collections.sort(transformedRows, new SortByZOrder());
+
+        // StringBuilder newRowsData = new StringBuilder();
+        // for(int i = 0; i < transformedRows.size(); i++) {
+        //   newRowsData.append(transformedRows.get(i).toString());
+        // }
+        // System.out.println("the data after sorting is: ");
+        // System.out.print(newRowsData);
+
+        // delete all rows from the current table
+        String deleteSql = "DELETE FROM " + bboxTable + ";";
+        System.out.println(deleteSql);
+        Statement deleteSqlStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        deleteSqlStatement.executeUpdate(deleteSql);
+
+
+        String insertSql = "INSERT INTO " + bboxTable + " VALUES (";
+        // for debugging, vary number of spaces after the commas
+        for (int i = 0; i < numberCols; i++) {
+            insertSql += "?,";
+        }
+        if (isCitus) insertSql += "?,";
+        insertSql += "?,?,?,?,?,?)";
+        System.out.println(insertSql);
+        PreparedStatement preparedStmt =
+                DbConnector.getPreparedStatement(Config.databaseName, insertSql);
+
+        int rowCount = 0;
+        for (int i = 0; i < transformedRows.size(); i++) {
+          rowCount++;
+          int pscol = 1;
+          ArrayList<String> transformedRow = transformedRows.get(i).getColumnData();
+          for (int j = 0; j < numberCols; j++)
+                  preparedStmt.setString(pscol++, transformedRow.get(j).replaceAll("\'", "\'\'"));
+          if (isCitus) preparedStmt.setDouble(pscol++, rowCount);
+          for (int j = 0; j < 6; j++) preparedStmt.setDouble(pscol++, getBboxCoordinates(l, transformedRow).get(j));
+          preparedStmt.addBatch();
+        }
+        
     }
 
     @Override

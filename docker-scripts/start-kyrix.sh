@@ -82,6 +82,7 @@ while [ 1 ]; do KYRIX_PID=`ps awwwx | grep Slf4jMavenTransferListener | grep -v 
 
 echo "*** starting backend server..."
 cd /kyrix/back-end
+RUN MAVEN_OPTS=-Xmx4000m
 mvn -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn exec:java -Dexec.mainClass="main.Main" | stdbuf -oL grep -v Downloading: | tee mvn-exec.out &
 touch mvn-exec.out
 # note(asah): limited grep behavior inside alpine/busybox, but still this is awkward due to my limited shell scripting skills.

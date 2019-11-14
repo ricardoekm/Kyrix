@@ -4,6 +4,7 @@ const setPropertiesIfNotExists = require("./Utilities")
 const parsePathIntoSegments = require("./Utilities").parsePathIntoSegments;
 const translatePathSegments = require("./Utilities").translatePathSegments;
 const serializePath = require("./Utilities").serializePath;
+const getColName = require("./Utilities").getColName;
 const aggKeyDelimiter = "__";
 
 /**
@@ -354,6 +355,7 @@ function AutoDD(args) {
     }
     if ("boundary" in args.marks.hover)
         this.hoverParams.hoverBoundary = args.marks.hover.boundary;
+    this.topk = this.hoverParams.topk;
     console.log(this.hoverParams);
 
     /***************************
@@ -397,6 +399,7 @@ function AutoDD(args) {
     this.db = args.data.db;
     this.xCol = args.layout.x.field;
     this.yCol = args.layout.y.field;
+    this.zCol = getColName(args.layout.z.field);
     this.clusterMode = args.marks.cluster.mode;
     this.aggDimensionFields = [];
     for (var i = 0; i < this.aggregateParams.aggDimensions.length; i++)
@@ -771,6 +774,8 @@ function getLayerRenderer(level, autoDDArrayIndex) {
         REPLACE_ME_processClusterAgg();
 
         // Step 2: append radars
+        console.log("data: ", data);
+
         var radars = g
             .selectAll("g.radar")
             .data(data)

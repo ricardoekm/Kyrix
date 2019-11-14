@@ -262,7 +262,7 @@ public class AutoDDInMemoryIndexer extends PsqlSpatialIndexer {
     private void createMVForLevel(int level, int autoDDIndex)
             throws SQLException, ClassNotFoundException {
 
-        System.out.println("Sampling for level " + level + "...");
+        System.out.println("Sampling for level " + level);
         AutoDD autoDD = Main.getProject().getAutoDDs().get(autoDDIndex);
         int numLevels = autoDD.getNumLevels();
 
@@ -352,6 +352,11 @@ public class AutoDDInMemoryIndexer extends PsqlSpatialIndexer {
         // count(*)
         clusterAgg.put("count(*)", "1");
 
+        // topk
+        ArrayList<ArrayList<String>> arrTopk = new ArrayList<>();
+        arrTopk.add(row);
+        clusterAgg.put("topk", gson.toJson(arrTopk));
+
         // convexHull
         double cx =
                 autoDD.getCanvasCoordinate(
@@ -410,6 +415,34 @@ public class AutoDDInMemoryIndexer extends PsqlSpatialIndexer {
             parent.put("count(*)", String.valueOf(parentCount + childCount));
         }
 
+        // topk
+        if (!parent.containsKey("topk")) parent.put("topk", child.get("topk"));
+        else {
+            ArrayList<ArrayList<String>> parentTopk =
+                    gson.fromJson(parent.get("topk"), ArrayList.class);
+            ArrayList<ArrayList<String>> childTopk =
+                    gson.fromJson(child.get("topk"), ArrayList.class);
+            ArrayList<ArrayList<String>> topk = new ArrayList<>();
+            int pi = 0, ci = 0, zid = autoDD.getZColId();
+            while (pi + ci < autoDD.getTopk()) {
+                if (pi == parentTopk.size() && ci == childTopk.size()) break;
+                if (pi == parentTopk.size()) {
+                    topk.add(childTopk.get(ci));
+                    ci++;
+                } else if (ci == childTopk.size()) {
+                    topk.add(parentTopk.get(pi));
+                    pi++;
+                } else if (Double.valueOf(parentTopk.get(pi).get(zid))
+                        < Double.valueOf(childTopk.get(ci).get(zid))) {
+                    topk.add(childTopk.get(ci));
+                    ci++;
+                } else {
+                    topk.add(parentTopk.get(pi));
+                    pi++;
+                }
+            }
+            parent.put("topk", gson.toJson(topk));
+        }
         // convexHull
         ArrayList<Double> childConvexHull;
         childConvexHull = gson.fromJson(child.get("convexHull"), ArrayList.class);
@@ -425,7 +458,8 @@ public class AutoDDInMemoryIndexer extends PsqlSpatialIndexer {
 
         // numeric aggregations
         for (String aggKey : child.keySet()) {
-            if (aggKey.equals("count(*)") || aggKey.equals("convexHull")) continue;
+            if (aggKey.equals("count(*)") || aggKey.equals("topk") || aggKey.equals("convexHull"))
+                continue;
             if (!parent.containsKey(aggKey)) parent.put(aggKey, child.get(aggKey));
             else {
                 String curFunc =

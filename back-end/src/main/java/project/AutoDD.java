@@ -9,15 +9,16 @@ import main.DbConnector;
 public class AutoDD {
 
     private String query, db;
-    private String xCol, yCol;
+    private String xCol, yCol, zCol;
     private int bboxW, bboxH;
+    private int topk;
     private String clusterMode;
     private ArrayList<String> columnNames, queriedColumnNames = null;
     private ArrayList<String> aggDimensionFields, aggMeasureFields;
     private int numLevels, topLevelWidth, topLevelHeight;
     private double overlap;
     private double zoomFactor;
-    private int xColId = -1, yColId = -1;
+    private int xColId = -1, yColId = -1, zColId = -1;
     private double loX = Double.NaN, loY, hiX, hiY;
 
     public String getQuery() {
@@ -70,6 +71,15 @@ public class AutoDD {
         return yColId;
     }
 
+    public int getZColId() {
+
+        if (zColId < 0) {
+            ArrayList<String> colNames = getColumnNames();
+            for (int i = 0; i < colNames.size(); i++) if (colNames.get(i).equals(zCol)) zColId = i;
+        }
+        return zColId;
+    }
+
     public ArrayList<String> getColumnNames() {
 
         // if it is specified already, return
@@ -109,6 +119,10 @@ public class AutoDD {
 
     public int getTopLevelHeight() {
         return topLevelHeight;
+    }
+
+    public int getTopk() {
+        return topk;
     }
 
     public double getZoomFactor() {

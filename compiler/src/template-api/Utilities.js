@@ -194,11 +194,25 @@ function serializePath(path) {
     }, "");
 }
 
+/**
+ * get the column name from a sql column
+ * @param path
+ */
+function getColName(str) {
+    var regex = /(?<=cast.*\(\s*?)\w*/gi;
+    if (!str.match(regex)) return str;
+    else {
+        var col = regex.exec(str)[0];
+        return col;
+    }
+}
+
 module.exports = {
     textwrap,
     getBodyStringOfFunction,
     setPropertiesIfNotExists,
     parsePathIntoSegments,
     translatePathSegments,
-    serializePath
+    serializePath,
+    getColName
 };

@@ -463,6 +463,9 @@ public class AutoDDBottomUpIndexer extends PsqlSpatialIndexer {
         // wrong classification
         clusterAgg.put("wrong", "0");
 
+        // topk
+        clusterAgg.put("topk", gson.toJson(row));
+
         // numeric aggregations
         String curDimensionStr = "";
         for (String dimension : autoDD.getAggDimensionFields()) {

@@ -18,6 +18,7 @@ public class AutoDD {
     private int numLevels, topLevelWidth, topLevelHeight;
     private boolean overlap;
     private double zoomFactor;
+    private int topk;
     private int xColId = -1, yColId = -1, zColId = -1;
     private double loX = Double.NaN, loY, hiX, hiY;
 
@@ -55,6 +56,10 @@ public class AutoDD {
 
     public boolean getOverlap() {
         return overlap;
+    }
+
+    public int getTopK() {
+        return topk;
     }
 
     public int getXColId() {

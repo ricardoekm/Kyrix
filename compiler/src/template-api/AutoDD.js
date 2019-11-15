@@ -775,6 +775,7 @@ function getLayerRenderer(level, autoDDArrayIndex) {
 
         // Step 2: append radars
         console.log("data: ", data);
+        console.log("args", args);
 
         var radars = g
             .selectAll("g.radar")
@@ -1128,14 +1129,145 @@ function getLayerRenderer(level, autoDDArrayIndex) {
             // bbox renderer here....
         }
 
-        function tabularRankListRenderer(svg, data, args) {
+        function tabularRankListRenderer(svg, data, args, d) {
+            var params = args.renderingParams;
+            // console.log("tabularRankListRenderer: ", data);
+            var fields = params.hoverTableFields;
+
+            var charW = 15;
+            var charH = 30;
+            var paddingH = 10;
+            var paddingW = 15;
+            var headerH = charH + 20;
+
+            var g = svg
+                .append("g")
+                .attr("id", "tabular_hover")
+                .attr("class", "tabular hover ranklist");
+            var columnNames = params.columnNames;
+            var fields = params.hoverTableFields;
+            var widths = {};
+            var totalW = 0,
+                totalH = data.length * (charH + paddingH) + headerH;
+            for (var i = 0; i < fields.length; i++) {
+                var maxlen = 0;
+                var index = columnNames.indexOf(fields[i]);
+                for (var j = 0; j < data.length; j++) {
+                    maxlen = d3.max([
+                        data[j][columnNames[index]].length,
+                        maxlen
+                    ]);
+                }
+                maxlen = d3.max([columnNames[index].length, maxlen]);
+                widths[columnNames[index]] = maxlen * charW + paddingW;
+                totalW += maxlen * charW + paddingW;
+            }
+            var basex = d.cx - totalW / 2;
+            var basey = d.cy - totalH / 2;
+            var runx = basex,
+                runy = basey;
+            var datum = {
+                cx: d.cx,
+                cy: d.cy,
+                minx: basex,
+                miny: basey,
+                maxx: basex + totalW,
+                maxy: basey + totalH
+            };
+            for (var i = 0; i < fields.length; i++) {
+                var width = widths[fields[i]];
+                // th
+                g.append("rect")
+                    .datum(datum)
+                    .attr("x", runx)
+                    .attr("y", runy)
+                    .attr("width", width)
+                    .attr("height", headerH)
+                    .attr("style", "fill: #888888; stroke: #c0c4c3;");
+                g.append("text")
+                    .datum(datum)
+                    .text(fields[i])
+                    .attr("x", runx + width / 2)
+                    .attr("y", runy + headerH / 2)
+                    .attr("style", "fill: #f8f4ed;")
+                    .style("text-anchor", "middle")
+                    .style("font-size", charH + "px")
+                    .attr("dy", "0.35em");
+                runy += headerH;
+                // tr
+                for (var j = 0; j < data.length; j++) {
+                    g.append("rect")
+                        .datum(datum)
+                        .attr("x", runx)
+                        .attr("y", runy)
+                        .attr("width", width)
+                        .attr("height", charH + paddingH)
+                        .attr("style", "fill: #ebebeb; stroke: #c0c4c3;");
+                    g.append("text")
+                        .datum(datum)
+                        .text(data[j][fields[i]])
+                        .attr("x", runx + width / 2)
+                        .attr("y", runy + (charH + paddingH) / 2)
+                        .style("text-anchor", "middle")
+                        .style("font-size", charH + "px")
+                        .attr("dy", "0.35em");
+                    runy += charH + paddingH;
+                }
+                runx += width;
+                runy = basey;
+            }
+
             // tabular renderer here....
+        }
+
+        function topk(svg, data, args, renderer, d) {
+            var params = args.renderingParams;
+            var topk = data.length;
+            var columnNames = params.columnNames;
+            data = data.map((d, i, arr) => {
+                var obj = {};
+                for (var i = 0; i < columnNames.length; i++) {
+                    obj[columnNames[i]] = d[i];
+                }
+                return obj;
+            });
+            // console.log("topk", data);
+            if (params.hoverRankListMode == "tabular") {
+                renderer(svg, data, args, d);
+            } else {
+                var orientation = params.hoverRankListOrientation;
+                var bboxH = params.bboxH;
+                var bboxW = params.bboxW;
+                if (orientation == "vertical") {
+                    var totalH = bboxH * topk;
+                    for (var i = 0; i < topk; i++) {
+                        data[i].minx = d.cx - bboxW / 2;
+                        data[i].cx = d.cx;
+                        data[i].maxx = d.cx + bboxW / 2;
+                        data[i].miny = d.cy - totalH / 2 + i * bboxH;
+                        data[i].cy = d.cy - totalH / 2 + (i + 0.5) * bboxH;
+                        data[i].maxy = d.cy - totalH / 2 + (i + 1) * bboxH;
+                        renderer(svg, [data[i]], args);
+                    }
+                } else if (orientation == "horizontal") {
+                    var totalW = bboxW * topk;
+                    for (var i = 0; i < topk; i++) {
+                        data[i].minx = d.cx - totalW / 2 + i * bboxW;
+                        data[i].cx = d.cx - totalW / 2 + (i + 0.5) * bboxW;
+                        data[i].maxx = d.cx - totalW / 2 + (i + 1) * bboxW;
+                        data[i].miny = d.cy - bboxH / 2;
+                        data[i].cy = d.cy;
+                        data[i].miny = d.cy + bboxW / 2;
+                        renderer(svg, [data[i]], args);
+                    }
+                }
+            }
         }
 
         // ranklist
         if ("hoverRankListMode" in params) {
             var rankListRenderer;
-            if (params.rankListMode == "tabular")
+            if (params.hoverRankListMode == "tabular")
                 rankListRenderer = tabularRankListRenderer;
             else rankListRenderer = params.hoverCustomRenderer;
             g.selectAll(hoverSelector)
@@ -1145,11 +1277,18 @@ function getLayerRenderer(level, autoDDArrayIndex) {
                     // for tabular renderer, you'd need to add a header first
                     // use params.hoverRankListOrientation for deciding layout
                     // use params.bboxH(W) for bounding box size
+                    topk(
+                        svg,
+                        JSON.parse(d.clusterAgg.topk),
+                        args,
+                        rankListRenderer,
+                        d
+                    );
 
                     // uncomment the following line to renderer top1 custom
                     // rankListRenderer(svg, [d], args);
 
-                    svg.selectAll("g:last-of-type")
+                    svg.selectAll("g.hover")
                         .attr("id", "autodd_ranklist_hover")
                         .style("opacity", 0.8)
                         .style("pointer-events", "none")
@@ -1160,7 +1299,8 @@ function getLayerRenderer(level, autoDDArrayIndex) {
                         });
                 })
                 .on("mouseleave.ranklist", function() {
-                    d3.selectAll("#autodd_ranklist_hover").remove();
+                    // d3.selectAll("#autodd_ranklist_hover").remove();
+                    d3.selectAll(".hover").remove();
                 });
         }
 

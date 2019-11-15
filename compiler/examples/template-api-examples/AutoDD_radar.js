@@ -62,11 +62,14 @@ var autoDD = {
         },
         hover: {
             rankList: {
-                mode: "custom",
-                custom: renderers.playerRendering,
+                // mode: "custom",
+                // custom: renderers.playerRendering,
+                mode: "tabular",
+                fields: ["name", "nationality", "club", "rating", "wage"],
                 topk: 3,
                 config: {
                     hoverRankListOrientation: "horizontal",
+                    // hoverRankListOrientation: "vertical",
                     bboxW: 180,
                     bboxH: 240
                 }

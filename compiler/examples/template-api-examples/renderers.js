@@ -48,7 +48,7 @@ var renderingParams = {
 };
 
 function playerRendering(svg, data, args) {
-    var g = svg.append("g").attr("class", "player object");
+    var g = svg.append("g").attr("class", "player object hover");
     var params = args.renderingParams;
 
     var basex = d => +d.cx - +params.rectPlayer.w / 2;

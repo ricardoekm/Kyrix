@@ -63,6 +63,7 @@ public class AutoDDInMemoryIndexer extends PsqlSpatialIndexer {
         autoDD = Main.getProject().getAutoDDs().get(autoDDIndex);
         int numLevels = autoDD.getNumLevels();
         int numRawColumns = autoDD.getColumnNames().size();
+        Main.getProject().addBGRP("columnNames", gson.toJson(autoDD.getColumnNames()));
 
         System.out.println("aggDimensionFields: " + autoDD.getAggDimensionFields());
         System.out.println("aggMeasureFields: " + autoDD.getAggMeasureFields());

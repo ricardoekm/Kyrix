@@ -416,10 +416,10 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
         startTs = currTs;
 
         // using clustering, hopefully this sorts the objects by z-order
-        Statement clusterStatement = DbConnector.getStmtByDbName(Config.databaseName);
-        sql = "cluster " + bboxTableName + " using sp_" + bboxTableName;
-        System.out.println(sql);
-        clusterStatement.executeUpdate(sql);
+        // Statement clusterStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        // sql = "cluster " + bboxTableName + " using sp_" + bboxTableName;
+        // System.out.println(sql);
+        // clusterStatement.executeUpdate(sql);
 
         
     }

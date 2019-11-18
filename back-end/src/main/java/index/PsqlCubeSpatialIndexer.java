@@ -42,6 +42,10 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
         Canvas topCanvas = canvases.get(0);
         Canvas bottomCanvas = canvases.get(canvases.size() - 1);
 
+        // step -1: set work_mem to 1GB to speed up building index, sorts, etc.
+        String setWorkMemSql = "SET work_mem TO '1 GB'";
+        bboxStmt.executeUpdate(setWorkMemSql);
+
         // step 0: create tables for storing bboxes and tiles
         // put all canvases and layers in same table
         String bboxTableName = "bbox_" + Main.getProject().getName();
@@ -167,10 +171,10 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
             System.out.println(sql);
             bboxStmt.close();
             // use cluster to hopefully sort the index in z-order
-            Statement clusterStatement = DbConnector.getStmtByDbName(Config.databaseName);
-            sql = "cluster " + bboxTableName + " using cube_idx_" + bboxTableName + ";";
-            clusterStatement.executeUpdate(sql);
-            System.out.println(sql);
+            // Statement clusterStatement = DbConnector.getStmtByDbName(Config.databaseName);
+            // sql = "cluster " + bboxTableName + " using cube_idx_" + bboxTableName + ";";
+            // clusterStatement.executeUpdate(sql);
+            // System.out.println(sql);
         }
     }
 

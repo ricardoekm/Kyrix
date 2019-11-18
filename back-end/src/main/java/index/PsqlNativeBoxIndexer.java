@@ -80,7 +80,7 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
             sql += "citus_distribution_id int, ";
         }
         sql +=
-                "cx double precision, cy double precision, minx double precision, miny double precision, maxx double precision, maxy double precision, geom box)";
+                "cx double precision, cy double precision, minx double precision, miny double precision, maxx double precision, maxy double precision, zorder bigint, geom box)";
         System.out.println(sql);
         dropCreateStmt.executeUpdate(sql);
         dropCreateStmt.close();
@@ -262,7 +262,7 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
             insertSql += "?,";
         }
         if (isCitus) insertSql += "?,";
-        insertSql += "?,?,?,?,?,?)";
+        insertSql += "?,?,?,?,?,?,?)";
         System.out.println(insertSql);
         PreparedStatement preparedStmt =
                 DbConnector.getPreparedStatement(Config.databaseName, insertSql);
@@ -305,6 +305,13 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
                 preparedStmt.setString(pscol++, transformedRow.get(i).replaceAll("\'", "\'\'"));
             if (isCitus) preparedStmt.setDouble(pscol++, rowCount);
             for (int i = 0; i < 6; i++) preparedStmt.setDouble(pscol++, curBbox.get(i));
+
+            // set zorder value
+            KyrixRow currRow = new KyrixRow(curBbox);
+            long currRowZValue = currRow.getZOrderValue();
+            preparedStmt.setLong(pscol++, currRowZValue);
+
+            // ----------
             preparedStmt.addBatch();
             if (rowCount % batchsize == 0) {
                 preparedStmt.executeBatch();
@@ -387,7 +394,7 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
         startTs = currTs;
 
 
-        makeZOrderTable(bboxTableName, trans, l, isCitus);
+        makeZOrderTable(bboxTableName, trans, c, isCitus, layerId);
 
 
         // create index - gist/spgist require logged table type
@@ -410,79 +417,63 @@ public class PsqlNativeBoxIndexer extends BoundingBoxIndexer {
 
         // using clustering, hopefully this sorts the objects by z-order
         Statement clusterStatement = DbConnector.getStmtByDbName(Config.databaseName);
-        sql = "cluster " + bboxTableName + " using sp_" + bboxTableName + ";";
+        sql = "cluster " + bboxTableName + " using sp_" + bboxTableName;
         System.out.println(sql);
         clusterStatement.executeUpdate(sql);
 
         
     }
 
-    public void makeZOrderTable(String bboxTable, Transform trans, Layer l, Boolean isCitus) throws Exception {
-        // TODO: store the data in a format to pass to zorder
-        // TODO: implement zorder so it sorts by lower left point's representation
-        // TODO: figure out how to drop table and re-insert data according to new order
-        // get raw data from the table, print col names first
-        ArrayList<String> colListStr = trans.getColumnNames();
-        ArrayList<KyrixRow> transformedRows = new ArrayList<>();
-        int numberCols = colListStr.size();
-        System.out.println("col names are: " + colListStr.toString());
-        String sql = "select * from " + bboxTable + " ;";
-        System.out.println("Getting data from table sql query: " + sql);
-        ArrayList<ArrayList<String>> results = DbConnector.getQueryResult(Config.databaseName, sql);
-        System.out.println("results size is: " + results.size() + " should be: 50");
-        // StringBuilder originalRowsData = new StringBuilder();
-        for(int i = 0; i < results.size(); i++) {
-        //   for(int j=0; j<results.get(i).size(); j++) {
-        //     System.out.println("result: " + results.get(i).get(j));
-        //   }
-          KyrixRow currentRow = new KyrixRow(colListStr, results.get(i), isCitus);
-          // originalRowsData.append(currentRow.toString());
-          transformedRows.add(currentRow);
+    public void makeZOrderTable(String bboxTable, Transform trans, Canvas c, Boolean isCitus, int layerId) throws Exception {
+        // create new temp table with same fields as bbox table
+        //   "create table bboxtabletemp(.....);"
+        // copy data from bboxTable to new temp table
+        //   "insert into bbox_temp_table select * from bbox_table order by zorder;"
+        // delete rows from original table
+        //   "delete from bbox_table;"
+        // copy data from temp table back into original table
+        //   "insert into bbox_table select * from bbox_temp_table";
+
+        // create new temp table from bboxTable
+        String bboxTempTable = "bbox_" + Main.getProject().getName() + "_" + c.getId() + "layer" + layerId + "_temp";
+        Statement dropCreateStmt = DbConnector.getStmtByDbName(Config.databaseName);
+        String sql = "drop table if exists " + bboxTempTable + ";";
+        System.out.println(sql);
+        dropCreateStmt.executeUpdate(sql);
+
+        sql = "CREATE TABLE " + bboxTempTable + " (";
+        for (int i = 0; i < trans.getColumnNames().size(); i++)
+        sql += trans.getColumnNames().get(i) + " text, ";
+        if (isCitus) {
+          sql += "citus_distribution_id int, ";
         }
+        sql += "cx double precision, cy double precision, minx double precision, miny double precision, maxx double precision, maxy double precision, zorder bigint, geom box)";
+        System.out.println(sql);
+        dropCreateStmt.executeUpdate(sql);
+        dropCreateStmt.close();
 
-        // System.out.println("the data before sorting is: ");
-        // System.out.print(originalRowsData);
-        // sort with custom zorder comparator function
-        Collections.sort(transformedRows, new SortByZOrder());
+        // copy bboxtable data to temp table
+        Statement copyToTempStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        String copyToTempSql = "insert into " + bboxTempTable + " select * from " + bboxTable + " order by zorder";
+        System.out.println(copyToTempSql);
+        copyToTempStatement.executeUpdate(copyToTempSql);
+        copyToTempStatement.close();
 
-        // StringBuilder newRowsData = new StringBuilder();
-        // for(int i = 0; i < transformedRows.size(); i++) {
-        //   newRowsData.append(transformedRows.get(i).toString());
-        // }
-        // System.out.println("the data after sorting is: ");
-        // System.out.print(newRowsData);
-
-        // delete all rows from the current table
-        String deleteSql = "DELETE FROM " + bboxTable + ";";
-        System.out.println(deleteSql);
+        // delete all rows from bbox table
         Statement deleteSqlStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        String deleteSql = "delete from " + bboxTable;
+        System.out.println(deleteSql);
         deleteSqlStatement.executeUpdate(deleteSql);
+        deleteSqlStatement.close();
 
-
-        String insertSql = "INSERT INTO " + bboxTable + " VALUES (";
-        // for debugging, vary number of spaces after the commas
-        for (int i = 0; i < numberCols; i++) {
-            insertSql += "?,";
-        }
-        if (isCitus) insertSql += "?,";
-        insertSql += "?,?,?,?,?,?)";
-        System.out.println(insertSql);
-        PreparedStatement preparedStmt =
-                DbConnector.getPreparedStatement(Config.databaseName, insertSql);
-
-        int rowCount = 0;
-        for (int i = 0; i < transformedRows.size(); i++) {
-          rowCount++;
-          int pscol = 1;
-          ArrayList<String> transformedRow = transformedRows.get(i).getColumnData();
-          for (int j = 0; j < numberCols; j++)
-                  preparedStmt.setString(pscol++, transformedRow.get(j).replaceAll("\'", "\'\'"));
-          if (isCitus) preparedStmt.setDouble(pscol++, rowCount);
-          for (int j = 0; j < 6; j++) preparedStmt.setDouble(pscol++, getBboxCoordinates(l, transformedRow).get(j));
-          preparedStmt.addBatch();
-        }
-        
+        // copy rows from temp table to bbox table
+        Statement copyFromTempStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        String copyFromTempSql = "insert into " + bboxTable + " select * from " + bboxTempTable;
+        System.out.println(copyFromTempSql);
+        copyFromTempStatement.executeUpdate(copyFromTempSql);
+        copyFromTempStatement.close();   
     }
+
 
     @Override
     public ArrayList<ArrayList<String>> getDataFromRegion(

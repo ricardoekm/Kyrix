@@ -63,7 +63,7 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
             for (int i = 0; i < colNames.size(); i++) sql += colNames.get(i) + " text, ";
             // need to add value based on canvas id and layer id
             sql +=
-                    "cx double precision, cy double precision, minx double precision, miny double precision, maxx double precision, maxy double precision, v cube);";
+                    "cx double precision, cy double precision, minx double precision, miny double precision, maxx double precision, maxy double precision, zorder bigint, v cube);";
             bboxStmt.executeUpdate(sql);
         }
 
@@ -80,7 +80,7 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
         int numColumn = rs.getMetaData().getColumnCount();
         int rowCount = 0;
         String insertSql = "insert into " + bboxTableName + " values (";
-        for (int i = 0; i < colNames.size() + 6; i++) {
+        for (int i = 0; i < colNames.size() + 7; i++) {
             insertSql += "?, ";
         }
         insertSql += "?::cube);";
@@ -118,8 +118,15 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
             maxx = curBbox.get(4);
             maxy = curBbox.get(5);
 
+            // set zorder value
+            KyrixRow currRow = new KyrixRow(curBbox);
+            long currRowZValue = currRow.getZOrderValue();
+            preparedStmt.setLong(transformedRow.size() + 7, currRowZValue);
+
+            // ----------
+
             preparedStmt.setString(
-                    transformedRow.size() + 7, getCubeText(minx, miny, maxx, maxy, c));
+                    transformedRow.size() + 8, getCubeText(minx, miny, maxx, maxy, c));
             preparedStmt.addBatch();
 
             if (rowCount % Config.bboxBatchSize == 0) {
@@ -138,6 +145,10 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
 
         // index on inserted data if the canvas is the bottom-most canvas
         if (c.getId().equals(bottomCanvas.getId())) {
+            // sort according to ascending zorder
+            makeZOrderTable(bboxTableName, trans, c, layerId);
+
+
             // set maintenance_work_mem variable to high value so can index and cluster faster
             sql = "SET maintenance_work_mem = '1 GB';";
             System.out.println(sql);
@@ -161,6 +172,54 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
             clusterStatement.executeUpdate(sql);
             System.out.println(sql);
         }
+    }
+
+    public void makeZOrderTable(String bboxTable, Transform trans, Canvas c, int layerId) throws Exception {
+        // create new temp table with same fields as bbox table
+        //   "create table bboxtabletemp(.....);"
+        // copy data from bboxTable to new temp table
+        //   "insert into bbox_temp_table select * from bbox_table order by zorder;"
+        // delete rows from original table
+        //   "delete from bbox_table;"
+        // copy data from temp table back into original table
+        //   "insert into bbox_table select * from bbox_temp_table";
+
+        // create new temp table from bboxTable
+        String bboxTempTable = "bbox_" + Main.getProject().getName() +  "_temp";
+        Statement dropCreateStmt = DbConnector.getStmtByDbName(Config.databaseName);
+        String sql = "drop table if exists " + bboxTempTable + ";";
+        System.out.println(sql);
+        dropCreateStmt.executeUpdate(sql);
+
+        sql = "CREATE TABLE " + bboxTempTable + " (";
+        for (int i = 0; i < trans.getColumnNames().size(); i++)
+        sql += trans.getColumnNames().get(i) + " text, ";
+
+        sql += "cx double precision, cy double precision, minx double precision, miny double precision, maxx double precision, maxy double precision, zorder bigint, v cube)";
+        System.out.println(sql);
+        dropCreateStmt.executeUpdate(sql);
+        dropCreateStmt.close();
+
+        // copy bboxtable data to temp table
+        Statement copyToTempStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        String copyToTempSql = "insert into " + bboxTempTable + " select * from " + bboxTable + " order by zorder";
+        System.out.println(copyToTempSql);
+        copyToTempStatement.executeUpdate(copyToTempSql);
+        copyToTempStatement.close();
+
+        // delete all rows from bbox table
+        Statement deleteSqlStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        String deleteSql = "delete from " + bboxTable;
+        System.out.println(deleteSql);
+        deleteSqlStatement.executeUpdate(deleteSql);
+        deleteSqlStatement.close();
+
+        // copy rows from temp table to bbox table
+        Statement copyFromTempStatement = DbConnector.getStmtByDbName(Config.databaseName);
+        String copyFromTempSql = "insert into " + bboxTable + " select * from " + bboxTempTable;
+        System.out.println(copyFromTempSql);
+        copyFromTempStatement.executeUpdate(copyFromTempSql);
+        copyFromTempStatement.close();   
     }
 
     @Override

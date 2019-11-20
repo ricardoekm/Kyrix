@@ -315,21 +315,23 @@ public class PsqlCubeSpatialIndexer extends BoundingBoxIndexer {
         double minz = getMinZ(c);
         double maxz = minz + zIntervalLen - 100;
         Random r = new Random();
-        double zCoordinate = minz + (maxz - minz) * r.nextDouble();
+        double minZCoordinate = minz + (maxz - minz) * r.nextDouble();
+        double maxZCoordinate = minz + (maxz - minz) * r.nextDouble();
+
         cubeText +=
                 "("
                         + String.valueOf(minx)
                         + ", "
                         + String.valueOf(miny)
                         + ", "
-                        + String.valueOf(zCoordinate)
+                        + String.valueOf(minZCoordinate)
                         + "), "
                         + "("
                         + String.valueOf(maxx)
                         + ", "
                         + String.valueOf(maxy)
                         + ", "
-                        + String.valueOf(zCoordinate)
+                        + String.valueOf(maxZCoordinate)
                         + ")";
 
         return cubeText;

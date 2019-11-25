@@ -644,6 +644,8 @@ function saveProject() {
         if (typeof value === "function") return value.toString();
         return value;
     });
+
+    console.log("saving project: ", this.name);
     var logJSON = JSON.stringify(
         this,
         function(key, value) {

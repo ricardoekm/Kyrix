@@ -929,7 +929,11 @@ function getLayerRenderer(level, autoDDArrayIndex) {
             .attr("fill", function(d, i) {
                 var ret = color(d.data.key);
                 return ret;
-            });
+            })
+            .style("opacity", 0)
+            .transition()
+            .style("opacity", 1)
+            .duration(1000);
 
         // numbers
         g.selectAll("text.cluster_num")
@@ -946,7 +950,11 @@ function getLayerRenderer(level, autoDDArrayIndex) {
             .style("fill-opacity", 0.8)
             .style("fill", "grey")
             .style("pointer-events", "none")
-            .classed("kyrix-retainsizezoom", true);
+            .classed("kyrix-retainsizezoom", true)
+            .style("opacity", 0)
+            .transition()
+            .style("opacity", 1)
+            .duration(1000);
 
         // for hover
         g.selectAll(".piehover")

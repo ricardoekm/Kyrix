@@ -10,7 +10,7 @@ const renderers = require("./renderers");
 const transforms = require("./transforms");
 
 // construct a project
-var p = new Project("flare", "../../../config.txt");
+var p = new Project("flare", "../config.txt");
 p.addRenderingParams(renderers.renderingParams);
 
 // ================== the only canvas ===================

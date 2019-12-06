@@ -11,7 +11,7 @@ const transforms = require("./transforms");
 const placements = require("./placements");
 
 // construct a project
-var p = new Project("forest", "../../../config.txt");
+var p = new Project("forest", "../config.txt");
 p.addRenderingParams(renderers.renderingParams);
 
 // ================== Canvas 1 ===================

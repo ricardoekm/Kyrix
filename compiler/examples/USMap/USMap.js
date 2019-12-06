@@ -11,7 +11,7 @@ const transforms = require("./transforms");
 const placements = require("./placements");
 
 // construct a project
-var p = new Project("usmap", "../../../config.txt");
+var p = new Project("usmap", "../config.txt");
 p.addRenderingParams(renderers.renderingParams);
 
 // ================== state map canvas ===================

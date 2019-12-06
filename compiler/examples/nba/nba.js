@@ -11,7 +11,7 @@ const transforms = require("./transforms");
 const placements = require("./placements");
 
 // construct a project
-var p = new Project("nba", "../../../config.txt");
+var p = new Project("nba", "../config.txt");
 p.addRenderingParams(renderers.renderingParams);
 
 // ================== Canvas teamlogo ===================
@@ -211,7 +211,15 @@ p.addJump(
 );
 
 // seperate CSS file
-p.addStyles("./nba.css");
+p.addStyles("./examples/nba/nba.css");
+
+console.log("saving the project")
+
 
 // save to db
 p.saveProject();
+
+console.log("project saved")
+
+
+

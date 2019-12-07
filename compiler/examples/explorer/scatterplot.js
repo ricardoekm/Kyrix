@@ -7,7 +7,7 @@ const View = require("../../src/View").View;
 const Transform = require("../../src/Transform").Transform;
 
 const transform = new Transform(
-    "select * from income;",
+    "select rendimento, idade from income;",
     "explorer",
     function(row) {
         var ret = [];
@@ -16,7 +16,7 @@ const transform = new Transform(
 
         return Java.to(ret, "java.lang.String[]");
     },
-    ["age", "income"],
+    ["rendimento", "idade"],
     true
 );
 
@@ -27,12 +27,12 @@ const rendering = function(svg, data) {
         .enter()
         .append("circle")
         .attr("cx", function(d) {
-            return Math.floor(Math.random() * 1000);
+            return data.rendimento;
         })
         .attr("cy", function(d) {
-            return Math.floor(Math.random() * 1000);
+            return data.idade;
         })
-        .attr("r", 10)
+        .attr("r", 5)
         .attr("fill", "#145bce");
 };
 

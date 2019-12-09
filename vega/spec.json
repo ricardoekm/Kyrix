@@ -1,0 +1,77 @@
+{
+    "$schema": "https://vega.github.io/schema/vega/v5.json",
+    "width": 600,
+    "height": 600,
+    "padding": 5,
+  
+    "data": [
+      {
+        "name": "source",
+        "url": "data/pessoas_amostra.csv",
+        "format": {
+          "type": "csv",
+          "parse": "auto"
+        },
+        "transform": [
+         {
+            "type": "filter",
+            "expr": "datum['rendimento'] < 10000"
+         }]
+      }
+    ],
+  
+    "scales": [
+      {
+        "name": "x",
+        "type": "linear",
+        "round": true,
+        "nice": true,
+        "zero": true,
+        "domain": {"data": "source", "field": "idade"},
+        "range": "width"
+      },
+      {
+        "name": "y",
+        "type": "linear",
+        "round": true,
+        "nice": true,
+        "zero": true,
+        "domain": {"data": "source", "field": "rendimento"},
+        "range": "height"
+      }
+    ],
+  
+    "axes": [
+      {
+        "scale": "x",
+        "grid": true,
+        "domain": false,
+        "orient": "bottom",
+        "tickCount": 5,
+        "title": "Idade"
+      },
+      {
+        "scale": "y",
+        "grid": true,
+        "domain": false,
+        "orient": "left",
+        "titlePadding": 5,
+        "title": "Renda"
+      }
+    ],
+    "marks": [
+      {
+        "name": "marks",
+        "type": "symbol",
+        "from": {"data": "source"},
+        "encode": {
+          "update": {
+            "x": {"scale": "x", "field": "idade"},
+            "y": {"scale": "y", "field": "rendimento"},
+            "size": {"value": 10}
+          }
+        }
+      }
+    ]
+  }
+  

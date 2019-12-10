@@ -9,9 +9,13 @@ const scatterplot = require("./scatterplot");
 
 var project = new Project("explorer", "../config.txt");
 project.addCanvas(scatterplot.canvas);
+project.addCanvas(scatterplot.zoomInCanvas);
 
-var view = new View("explorer", 0, 0, 1000, 2000);
+var view = new View("explorer", 0, 0, 2000, 2000);
 project.addView(view);
+
 project.setInitialStates(view, scatterplot.canvas, 0, 0);
+
+project.addJump(new Jump(scatterplot.canvas, scatterplot.zoomInCanvas, "literal_zoom_in"));
 
 project.saveProject();

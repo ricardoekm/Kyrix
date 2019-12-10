@@ -69,6 +69,7 @@ function setupLayerLayouts(viewId) {
         var isStatic = curLayer.isStatic;
         // add new <g>
         d3.select(".view_" + viewId + ".maing")
+            .attr("id","viewMaing")
             .append("g")
             .classed("view_" + viewId + " layerg layer" + i, true)
             .append("svg")

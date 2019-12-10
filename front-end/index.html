@@ -33,11 +33,10 @@
 
         <script type="text/javascript">
               function vegaRender(spec,data) {
-                console.log(data)
                 spec.data[0].values = data;  
                 view = new vega.View(vega.parse(spec), {
                 renderer:  'svg', 
-                container: '#containerSvg',
+                container: '#viewMaing',
                 hover:     true,
                 });
                 return view.runAsync();

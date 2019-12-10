@@ -38,15 +38,11 @@
                     //spec.width = window.innerWidth - 400;
                     view = new vega.View(vega.parse(spec), {
                         renderer:  'svg', 
-                        container: '#viewMaing',
+                        container: '#vegaParent',
                         hover:     true,
                     });
                     
                     await view.runAsync();
-                    
-                    var marks = document.querySelector(".marks");
-                    marks.classList.add("mainsvg");
-                    marks.classList.add("view_explorer");     
                }
         </script>
     </head>

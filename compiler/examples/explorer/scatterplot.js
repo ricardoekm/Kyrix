@@ -110,6 +110,8 @@ const rendering = function(svg, data) {
         ]
       }
 
+    svg.attr("id", "vegaParent")
+
     return vegaRender(spec,data);
 };
 

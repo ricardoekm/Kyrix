@@ -1,0 +1,22 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+  "description": "Income scatterplot",
+  "width": 600,
+  "height": 600,
+  "data": {
+    "url": "data/pessoas_amostra_limpo.csv",
+    "format": {
+        "type": "csv"
+      },
+      "transform": [
+        {
+           "type": "filter",
+           "expr": "datum['rendimento'] < 10000"
+        }]
+   },
+  "mark": "point",
+  "encoding": {
+    "y": {"field": "rendimento", "type": "quantitative"},
+    "x": {"field": "idade", "type": "quantitative"}
+  }
+}

@@ -2,6 +2,8 @@
 const fs = require("fs");
 const mysql = require("mysql");
 const psql = require("pg");
+delete psql.native;
+
 const http = require("http");
 const Canvas = require("./Canvas").Canvas;
 const View = require("./View").View;
@@ -719,7 +721,8 @@ function saveProject() {
 
         // construct a connection to the postgres db to create Kyrix db
         var postgresConn = new psql.Client({
-            host: config.serverName,
+            host: "127.0.0.1",
+            database: "kyrix",
             user: config.userName,
             password: config.password,
             qdatabase: "postgres"
@@ -729,10 +732,10 @@ function saveProject() {
         postgresConn.connect(function(err) {
             postgresConn.query(createDbQuery, function(err) {
                 var dbConn = new psql.Client({
-                    host: config.serverName,
+                    host: "127.0.0.1",
                     user: config.userName,
                     password: config.password,
-                    database: config.kyrixDbName
+                    database: 'kyrix'
                 });
 
                 // connect and pose queries

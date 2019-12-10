@@ -18,6 +18,7 @@
         <script src="https://cdn.jsdelivr.net/npm/css-element-queries@1.2.1/src/ElementQueries.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/css-element-queries@1.2.1/src/ResizeSensor.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
         <script src="/js/globalVar.js"></script>
         <script src="/js/parameter.js"></script>
         <script src="/js/zoom.js"></script>
@@ -28,6 +29,19 @@
         <script src="/js/staticLayers.js"></script>
         <script>
             $(document).ready(pageOnLoad());
+        </script>
+
+        <script type="text/javascript">
+              function vegaRender(spec,data) {
+                console.log(data)
+                spec.data[0].values = data;  
+                view = new vega.View(vega.parse(spec), {
+                renderer:  'svg', 
+                container: '#containerSvg',
+                hover:     true,
+                });
+                return view.runAsync();
+            }
         </script>
     </head>
 </html>

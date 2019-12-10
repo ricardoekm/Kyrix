@@ -10,7 +10,7 @@ const scatterplot = require("./scatterplot");
 var project = new Project("explorer", "../config.txt");
 project.addCanvas(scatterplot.canvas);
 
-var view = new View("explorer", 0, 0, 1000, 1000);
+var view = new View("explorer", 0, 0, 1000, 2000);
 project.addView(view);
 project.setInitialStates(view, scatterplot.canvas, 0, 0);
 

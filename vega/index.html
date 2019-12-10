@@ -6,7 +6,7 @@
     <script type="text/javascript">
       var view;
   
-      fetch('spec.json')
+      fetch('spec6.json')
         .then(res => res.json())
         .then(spec => render(spec))
         .catch(err => console.error(err));
@@ -15,7 +15,8 @@
         view = new vega.View(vega.parse(spec), {
           renderer:  'canvas',  // renderer (canvas or svg)
           container: '#view',   // parent DOM container
-          hover:     true       // enable hover processing
+          hover:     true,
+          renderer: 'svg'       // enable hover processing
         });
         return view.runAsync();
       }

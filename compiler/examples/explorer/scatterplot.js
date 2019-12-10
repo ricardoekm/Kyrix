@@ -21,25 +21,16 @@ const transform = new Transform(
 );
 
 const rendering = function(svg, data) {
-    g = svg.append("g");
-    g.selectAll("circle")
-        .data(data)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) {
-            return data.rendimento;
-        })
-        .attr("cy", function(d) {
-            return data.idade;
-        })
-        .attr("r", 5)
-        .attr("fill", "#145bce");
+    fetch('http://localhost:8080/spec6.json')
+        .then(res => res.json())
+        .then(spec => vegaRender(spec,data))
+        .catch(err => console.error(err));
 };
 
 var layer = new Layer(transform, true);
 layer.addRenderingFunc(rendering);
 
-var canvas = new Canvas("scatterplot", 1000, 1000);
+var canvas = new Canvas("scatterplot", 4000, 4000);
 canvas.addLayer(layer);
 
 module.exports = {

@@ -105,6 +105,101 @@ function highlightLowestSvg(viewId, svg, layerId) {
         });
 }
 
+async function doRenderTiles(data) {
+    // response data
+    var response = JSON.parse(data);
+    var x = response.minx;
+    var y = response.miny;
+    var canvasId = response.canvasId;
+    if (canvasId != gvd.curCanvasId) return;
+    var renderData = response.renderData;
+    var numLayers = gvd.curCanvas.layers.length;
+
+    // loop through layers
+    for (var i = numLayers - 1; i >= 0; i--) {
+        // current layer object
+        var curLayer = gvd.curCanvas.layers[i];
+
+        // if this layer is static, continue;
+        if (curLayer.isStatic) continue;
+
+        // if this layer does not use tiling, continue;
+        if (curLayer.fetchingScheme != "tiling") continue;
+
+        // remove tuples outside the viewport
+        // doing this because some backend indexers use compression
+        // and may return tuples outside viewport
+        // doing this in the backend is not efficient, so we do it here
+        renderData[i] = renderData[i].filter(function(d) {
+            if (
+                +d.maxx < x ||
+                +d.minx > x + gvd.tileW ||
+                +d.maxy < y ||
+                +d.miny > y + gvd.tileH
+            )
+                return false;
+            return true;
+        });
+
+        // now add into gvd.renderData, dedup at the same time
+        if (!gvd.renderData[i]) gvd.renderData[i] = [];
+        var mp = {};
+        gvd.renderData[i].forEach(function(d) {
+            mp[JSON.stringify(d)] = true;
+        });
+        for (var j = 0; j < renderData[i].length; j++)
+            if (
+                !mp.hasOwnProperty(JSON.stringify(renderData[i][j]))
+            )
+                gvd.renderData[i].push(renderData[i][j]);
+
+        // save the render data of this tile for
+        // calculation of gvd.renderData later on
+        // when some tiles are removed
+        gvd.tileRenderData[x + " " + y + " " + gvd.curCanvasId][i] =
+            renderData[i];
+
+        // current tile svg
+        var tileSvg = d3
+            .select(viewClass + ".layerg.layer" + i)
+            .select(".mainsvg")
+            .select(".a" + x + y + gvd.curCanvasId);
+
+        // it's possible when the tile data is delayed
+        // and this tile is already removed
+        if (tileSvg.empty()) break;
+
+        // draw current layer
+        var optionalArgsWithTileXY = Object.assign(
+            {},
+            optionalArgs
+        );
+        optionalArgsWithTileXY["tileX"] = x;
+        optionalArgsWithTileXY["tileY"] = y;
+        await curLayer.rendering.parseFunction()(
+            tileSvg,
+            renderData[i],
+            optionalArgsWithTileXY
+        );
+        tileSvg.style("opacity", 1.0);
+
+        // register jumps
+        if (!globalVar.animation) registerJumps(viewId, tileSvg, i);
+
+        // highlight
+        highlightLowestSvg(viewId, tileSvg, i);
+
+        // rescale
+        tileSvg
+            .select("g:last-of-type")
+            .selectAll(".kyrix-retainsizezoom")
+            .each(function() {
+                zoomRescale(viewId, this);
+            });
+    }
+}
+
+
 function renderTiles(viewId, viewportX, viewportY, vpW, vpH, optionalArgs) {
     var gvd = globalVar.views[viewId];
     var numLayers = gvd.curCanvas.layers.length;
@@ -194,105 +289,168 @@ function renderTiles(viewId, viewportX, viewportY, vpW, vpH, optionalArgs) {
             type: "GET",
             url: globalVar.serverAddr + "/tile",
             data: postData,
-            success: function(data, status) {
-                // response data
-                var response = JSON.parse(data);
-                var x = response.minx;
-                var y = response.miny;
-                var canvasId = response.canvasId;
-                if (canvasId != gvd.curCanvasId) return;
-                var renderData = response.renderData;
-                var numLayers = gvd.curCanvas.layers.length;
+            success: function(data) { doRenderTiles(viewId,optionalArgs,viewClass,gvd,data) } })
 
-                // loop through layers
-                for (var i = numLayers - 1; i >= 0; i--) {
-                    // current layer object
-                    var curLayer = gvd.curCanvas.layers[i];
-
-                    // if this layer is static, continue;
-                    if (curLayer.isStatic) continue;
-
-                    // if this layer does not use tiling, continue;
-                    if (curLayer.fetchingScheme != "tiling") continue;
-
-                    // remove tuples outside the viewport
-                    // doing this because some backend indexers use compression
-                    // and may return tuples outside viewport
-                    // doing this in the backend is not efficient, so we do it here
-                    renderData[i] = renderData[i].filter(function(d) {
-                        if (
-                            +d.maxx < x ||
-                            +d.minx > x + gvd.tileW ||
-                            +d.maxy < y ||
-                            +d.miny > y + gvd.tileH
-                        )
-                            return false;
-                        return true;
-                    });
-
-                    // now add into gvd.renderData, dedup at the same time
-                    if (!gvd.renderData[i]) gvd.renderData[i] = [];
-                    var mp = {};
-                    gvd.renderData[i].forEach(function(d) {
-                        mp[JSON.stringify(d)] = true;
-                    });
-                    for (var j = 0; j < renderData[i].length; j++)
-                        if (
-                            !mp.hasOwnProperty(JSON.stringify(renderData[i][j]))
-                        )
-                            gvd.renderData[i].push(renderData[i][j]);
-
-                    // save the render data of this tile for
-                    // calculation of gvd.renderData later on
-                    // when some tiles are removed
-                    gvd.tileRenderData[x + " " + y + " " + gvd.curCanvasId][i] =
-                        renderData[i];
-
-                    // current tile svg
-                    var tileSvg = d3
-                        .select(viewClass + ".layerg.layer" + i)
-                        .select(".mainsvg")
-                        .select(".a" + x + y + gvd.curCanvasId);
-
-                    // it's possible when the tile data is delayed
-                    // and this tile is already removed
-                    if (tileSvg.empty()) break;
-
-                    // draw current layer
-                    var optionalArgsWithTileXY = Object.assign(
-                        {},
-                        optionalArgs
-                    );
-                    optionalArgsWithTileXY["tileX"] = x;
-                    optionalArgsWithTileXY["tileY"] = y;
-                    curLayer.rendering.parseFunction()(
-                        tileSvg,
-                        renderData[i],
-                        optionalArgsWithTileXY
-                    );
-                    tileSvg.style("opacity", 1.0);
-
-                    // register jumps
-                    if (!globalVar.animation) registerJumps(viewId, tileSvg, i);
-
-                    // highlight
-                    highlightLowestSvg(viewId, tileSvg, i);
-
-                    // rescale
-                    tileSvg
-                        .select("g:last-of-type")
-                        .selectAll(".kyrix-retainsizezoom")
-                        .each(function() {
-                            zoomRescale(viewId, this);
-                        });
-                }
-            }
-        });
         tilePromises.push(curTilePromise);
     });
 
     if (tilePromises.length == 0) return null;
     return Promise.all(tilePromises);
+}
+
+async function doRenderDynamicBoxes(viewId,optionalArgs,viewClass,gvd,data) {
+  // response data
+  var response = JSON.parse(data);
+  var x = response.minx;
+  var y = response.miny;
+  var canvasId = response.canvasId;
+  var renderData = response.renderData;
+
+  // check if this response is already outdated
+  // TODO: only checking canvasID might not be sufficient
+  if (canvasId != gvd.pendingBoxRequest) return;
+
+  // loop over every layer to render
+  var numLayers = gvd.curCanvas.layers.length;
+  for (var i = numLayers - 1; i >= 0; i--) {
+      // current layer object
+      var curLayer = gvd.curCanvas.layers[i];
+
+      // if this layer is static, continue
+      if (curLayer.isStatic) continue;
+
+      // if this layer does not use dbox, continue
+      if (curLayer.fetchingScheme != "dbox") continue;
+
+      // current box svg
+      var dboxSvg = d3
+          .select(viewClass + ".layerg.layer" + i)
+          .select(".mainsvg");
+
+      // remove stale geometries
+      dboxSvg
+          .selectAll("g")
+          .selectAll("*")
+          .filter(function(d) {
+              if (!curLayer.deltaBox) return true;
+              if (d == null) return false; // requiring all non-def stuff to be bound to data
+              if (
+                  +d.maxx < x ||
+                  +d.minx > x + response.boxW ||
+                  +d.maxy < y ||
+                  +d.miny > y + response.boxH
+              )
+                  return true;
+              else return false;
+          })
+          .remove();
+
+      // remove empty <g>s.
+      dboxSvg
+          .selectAll("g")
+          .filter(function() {
+              return d3
+                  .select(this)
+                  .select("*")
+                  .empty();
+          })
+          .remove();
+
+      // remove those returned objects outside the viewport
+      // doing this because some backend indexers use compression
+      // and may return tuples outside viewport
+      // doing this in the backend is not efficient, so we do it here
+      // also dedup
+      var mp = {};
+      gvd.renderData[i].forEach(function(d) {
+          mp[JSON.stringify(d)] = true;
+      });
+      renderData[i] = renderData[i].filter(function(d) {
+          if (
+              +d.maxx < x ||
+              +d.minx > x + response.boxW ||
+              +d.maxy < y ||
+              +d.miny > y + response.boxH
+          )
+              return false;
+          if (
+              curLayer.deltaBox &&
+              mp.hasOwnProperty(JSON.stringify(d))
+          )
+              return false;
+          return true;
+      });
+
+      // construct new globalVar.renderData
+      var newLayerData = JSON.parse(
+          JSON.stringify(renderData[i])
+      );
+      if (curLayer.deltaBox) {
+          // add data from intersection w/ old box data
+          for (var j = 0; j < gvd.renderData[i].length; j++) {
+              var d = gvd.renderData[i][j];
+              if (
+                  !(
+                      +d.maxx < x ||
+                      +d.minx > x + response.boxW ||
+                      +d.maxy < y ||
+                      +d.miny > y + response.boxH
+                  )
+              )
+                  newLayerData.push(d);
+          }
+      }
+      gvd.renderData[i] = newLayerData;
+
+      // draw current layer
+      var optionalArgsWithBoxWHXY = Object.assign(
+          {},
+          optionalArgs
+      );
+      optionalArgsWithBoxWHXY["boxX"] = x;
+      optionalArgsWithBoxWHXY["boxY"] = y;
+      optionalArgsWithBoxWHXY["boxW"] = response.boxW;
+      optionalArgsWithBoxWHXY["boxH"] = response.boxH;
+      await curLayer.rendering.parseFunction()(
+          dboxSvg,
+          renderData[i],
+          optionalArgsWithBoxWHXY
+      );
+
+      // register jumps
+      if (!gvd.animation) registerJumps(viewId, dboxSvg, i);
+
+      // highlight
+      highlightLowestSvg(viewId, dboxSvg, i);
+
+      // rescale
+      dboxSvg
+          .select("g:last-of-type")
+          .selectAll(".kyrix-retainsizezoom")
+          .each(function() {
+              zoomRescale(viewId, this);
+          });
+  }
+
+  // modify global var
+  gvd.boxH.push(response.boxH);
+  gvd.boxW.push(response.boxW);
+  gvd.boxX.push(x);
+  gvd.boxY.push(y);
+  gvd.pendingBoxRequest = null;
+
+  // refresh dynamic layers again while panning (#37)
+  if (!gvd.animation) {
+      var curViewport = d3
+          .select(viewClass + ".mainsvg:not(.static)")
+          .attr("viewBox")
+          .split(" ");
+      RefreshDynamicLayers(
+          viewId,
+          curViewport[0],
+          curViewport[1]
+      );
+  }
 }
 
 function renderDynamicBoxes(
@@ -361,161 +519,7 @@ function renderDynamicBoxes(
             type: "GET",
             url: globalVar.serverAddr + "/dbox",
             data: postData,
-            success: function(data) {
-                // response data
-                var response = JSON.parse(data);
-                var x = response.minx;
-                var y = response.miny;
-                var canvasId = response.canvasId;
-                var renderData = response.renderData;
-
-                // check if this response is already outdated
-                // TODO: only checking canvasID might not be sufficient
-                if (canvasId != gvd.pendingBoxRequest) return;
-
-                // loop over every layer to render
-                var numLayers = gvd.curCanvas.layers.length;
-                for (var i = numLayers - 1; i >= 0; i--) {
-                    // current layer object
-                    var curLayer = gvd.curCanvas.layers[i];
-
-                    // if this layer is static, continue
-                    if (curLayer.isStatic) continue;
-
-                    // if this layer does not use dbox, continue
-                    if (curLayer.fetchingScheme != "dbox") continue;
-
-                    // current box svg
-                    var dboxSvg = d3
-                        .select(viewClass + ".layerg.layer" + i)
-                        .select(".mainsvg");
-
-                    // remove stale geometries
-                    dboxSvg
-                        .selectAll("g")
-                        .selectAll("*")
-                        .filter(function(d) {
-                            if (!curLayer.deltaBox) return true;
-                            if (d == null) return false; // requiring all non-def stuff to be bound to data
-                            if (
-                                +d.maxx < x ||
-                                +d.minx > x + response.boxW ||
-                                +d.maxy < y ||
-                                +d.miny > y + response.boxH
-                            )
-                                return true;
-                            else return false;
-                        })
-                        .remove();
-
-                    // remove empty <g>s.
-                    dboxSvg
-                        .selectAll("g")
-                        .filter(function() {
-                            return d3
-                                .select(this)
-                                .select("*")
-                                .empty();
-                        })
-                        .remove();
-
-                    // remove those returned objects outside the viewport
-                    // doing this because some backend indexers use compression
-                    // and may return tuples outside viewport
-                    // doing this in the backend is not efficient, so we do it here
-                    // also dedup
-                    var mp = {};
-                    gvd.renderData[i].forEach(function(d) {
-                        mp[JSON.stringify(d)] = true;
-                    });
-                    renderData[i] = renderData[i].filter(function(d) {
-                        if (
-                            +d.maxx < x ||
-                            +d.minx > x + response.boxW ||
-                            +d.maxy < y ||
-                            +d.miny > y + response.boxH
-                        )
-                            return false;
-                        if (
-                            curLayer.deltaBox &&
-                            mp.hasOwnProperty(JSON.stringify(d))
-                        )
-                            return false;
-                        return true;
-                    });
-
-                    // construct new globalVar.renderData
-                    var newLayerData = JSON.parse(
-                        JSON.stringify(renderData[i])
-                    );
-                    if (curLayer.deltaBox) {
-                        // add data from intersection w/ old box data
-                        for (var j = 0; j < gvd.renderData[i].length; j++) {
-                            var d = gvd.renderData[i][j];
-                            if (
-                                !(
-                                    +d.maxx < x ||
-                                    +d.minx > x + response.boxW ||
-                                    +d.maxy < y ||
-                                    +d.miny > y + response.boxH
-                                )
-                            )
-                                newLayerData.push(d);
-                        }
-                    }
-                    gvd.renderData[i] = newLayerData;
-
-                    // draw current layer
-                    var optionalArgsWithBoxWHXY = Object.assign(
-                        {},
-                        optionalArgs
-                    );
-                    optionalArgsWithBoxWHXY["boxX"] = x;
-                    optionalArgsWithBoxWHXY["boxY"] = y;
-                    optionalArgsWithBoxWHXY["boxW"] = response.boxW;
-                    optionalArgsWithBoxWHXY["boxH"] = response.boxH;
-                    curLayer.rendering.parseFunction()(
-                        dboxSvg,
-                        renderData[i],
-                        optionalArgsWithBoxWHXY
-                    );
-
-                    // register jumps
-                    if (!gvd.animation) registerJumps(viewId, dboxSvg, i);
-
-                    // highlight
-                    highlightLowestSvg(viewId, dboxSvg, i);
-
-                    // rescale
-                    dboxSvg
-                        .select("g:last-of-type")
-                        .selectAll(".kyrix-retainsizezoom")
-                        .each(function() {
-                            zoomRescale(viewId, this);
-                        });
-                }
-
-                // modify global var
-                gvd.boxH.push(response.boxH);
-                gvd.boxW.push(response.boxW);
-                gvd.boxX.push(x);
-                gvd.boxY.push(y);
-                gvd.pendingBoxRequest = null;
-
-                // refresh dynamic layers again while panning (#37)
-                if (!gvd.animation) {
-                    var curViewport = d3
-                        .select(viewClass + ".mainsvg:not(.static)")
-                        .attr("viewBox")
-                        .split(" ");
-                    RefreshDynamicLayers(
-                        viewId,
-                        curViewport[0],
-                        curViewport[1]
-                    );
-                }
-            }
-        });
+            success: function(data) { doRenderDynamicBoxes(viewId,optionalArgs,viewClass,gvd,data) } })         
     }
 
     return null;

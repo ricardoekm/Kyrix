@@ -169,7 +169,7 @@ export function on(evt, viewId, callback) {
     throwError();
 }
 
-export function reRender(viewId, layerId, additionalArgs) {
+export async function reRender(viewId, layerId, additionalArgs) {
     var viewClass = ".view_" + viewId;
     var gvd = globalVar.views[viewId];
     var renderFunc = gvd.curCanvas.layers[layerId].rendering.parseFunction();
@@ -191,7 +191,7 @@ export function reRender(viewId, layerId, additionalArgs) {
         .selectAll(".lowestsvg")
         .each(function() {
             // run render function
-            renderFunc(d3.select(this), renderData, allArgs);
+            await renderFunc(d3.select(this), renderData, allArgs);
 
             // register jumps
             registerJumps(viewId, d3.select(this), layerId);

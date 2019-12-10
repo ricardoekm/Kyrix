@@ -21,10 +21,96 @@ const transform = new Transform(
 );
 
 const rendering = function(svg, data) {
-    fetch('vega/spec.json')
-        .then(res => res.json())
-        .then(spec => vegaRender(spec,data))
-        .catch(err => console.error(err));
+    var spec = {
+        $schema: 'https://vega.github.io/schema/vega/v5.json',
+        padding: 5,
+        width: 800,
+        height: 600,
+        data: [
+          {
+            name: 'source',
+            transform: [
+              {
+                type: 'filter',
+                expr: 'datum[\'rendimento\'] < 10000'
+              }
+            ]
+          }
+        ],
+        scales: [
+          {
+            name: 'x',
+            type: 'linear',
+            round: true,
+            domain: {
+              data: 'source',
+              field: 'idade'
+            },
+            range: 'width',
+            zero: false
+          },
+          {
+            name: 'y',
+            type: 'linear',
+            round: true,
+            nice: true,
+            zero: true,
+            domain: {
+              data: 'source',
+              field: 'rendimento'
+            },
+            range: 'height'
+          }
+        ],
+        axes: [
+          {
+            scale: 'x',
+            grid: true,
+            domain: false,
+            orient: 'bottom',
+            tickCount: 20
+          },
+          {
+            scale: 'y',
+            grid: true,
+            domain: false,
+            orient: 'left',
+            titlePadding: 5
+          }
+        ],
+        marks: [
+          {
+            name: 'marks',
+            type: 'symbol',
+            from: {
+              data: 'source'
+            },
+            encode: {
+              update: {
+                x: {
+                  scale: 'x',
+                  field: 'idade'
+                },
+                y: {
+                  scale: 'y',
+                  field: 'rendimento'
+                },
+                shape: {
+                  value: 'circle'
+                },
+                strokeWidth: {
+                  value: 2
+                },
+                fillOpacity: {
+                  value: 0.4
+                }
+              }
+            }
+          }
+        ]
+      }
+
+    return vegaRender(spec,data);
 };
 
 var placement = {
@@ -38,10 +124,10 @@ var layer = new Layer(transform, false);
 layer.addRenderingFunc(rendering);
 layer.addPlacement(placement);
 
-var canvas = new Canvas("scatterplot", 2000, 2000);
+var canvas = new Canvas("scatterplot", 10000, 10000);
 canvas.addLayer(layer);
 
-var zoomInCanvas = new Canvas("zoom_in_scatterplot", 4000, 4000);
+var zoomInCanvas = new Canvas("zoom_in_scatterplot", 40000, 40000);
 zoomInCanvas.addLayer(layer);
 
 module.exports = {

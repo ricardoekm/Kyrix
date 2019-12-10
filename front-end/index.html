@@ -32,22 +32,22 @@
         </script>
 
         <script type="text/javascript">
-              function vegaRender(spec,data) {
-                spec.data[0].values = data;  
-                view = new vega.View(vega.parse(spec), {
-                renderer:  'svg', 
-                container: '#viewMaing',
-                hover:     true,
-                });
-                
-                return view.runAsync()
-                    .then( () => {
-                           var marks = document.querySelector(".marks");
-                           marks.classList.add("mainsvg");
-                           marks.classList.add("view_explorer");                           
-                    }
-                );
-            }
+              async function vegaRender(spec,data) {
+                    spec.data[0].values = data;  
+                    //spec.height = window.innerHeight - 200;
+                    //spec.width = window.innerWidth - 400;
+                    view = new vega.View(vega.parse(spec), {
+                        renderer:  'svg', 
+                        container: '#viewMaing',
+                        hover:     true,
+                    });
+                    
+                    await view.runAsync();
+                    
+                    var marks = document.querySelector(".marks");
+                    marks.classList.add("mainsvg");
+                    marks.classList.add("view_explorer");     
+               }
         </script>
     </head>
 </html>

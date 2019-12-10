@@ -111,7 +111,6 @@ function startLiteralZoomTransition(viewId, center, scale, duration) {
 }
 
 function completeZoom(viewId, zoomType, oldZoomFactorX, oldZoomFactorY) {
-    console.log("completeZoom!!")
     var gvd = globalVar.views[viewId];
     var viewClass = ".view_" + viewId;
 

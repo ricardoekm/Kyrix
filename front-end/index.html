@@ -39,7 +39,14 @@
                 container: '#viewMaing',
                 hover:     true,
                 });
-                return view.runAsync();
+                
+                return view.runAsync()
+                    .then( () => {
+                           var marks = document.querySelector(".marks");
+                           marks.classList.add("mainsvg");
+                           marks.classList.add("view_explorer");                           
+                    }
+                );
             }
         </script>
     </head>

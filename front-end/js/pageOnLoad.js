@@ -154,16 +154,13 @@ function resizeKyrixSvg() {
         // set viewbox accordingly
         var svg = div.firstElementChild;
 
-        // TODO: Workaround because vega render async. Fix later
-        setTimeout(function(){  svg.setAttribute(
+        svg.setAttribute(
             "viewbox",
             "0 0 " +
                 (containerW * containerW) / realW +
                 " " +
                 (containerH * containerH) / realH
-        );}, 1000);
-
-       
+        );
     }
 }
 

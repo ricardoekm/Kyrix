@@ -111,6 +111,7 @@ function startLiteralZoomTransition(viewId, center, scale, duration) {
 }
 
 function completeZoom(viewId, zoomType, oldZoomFactorX, oldZoomFactorY) {
+    console.log("completeZoom!!")
     var gvd = globalVar.views[viewId];
     var viewClass = ".view_" + viewId;
 
@@ -201,6 +202,8 @@ function zoomed(viewId) {
         .select(viewClass + ".mainsvg:not(.static)")
         .attr("viewBox")
         .split(" ");
+
+    console.log("curViewPort" + curViewport)
     d3.selectAll(viewClass + ".mainsvg:not(.static)").attr(
         "viewBox",
         viewportX +

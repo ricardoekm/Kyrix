@@ -11,7 +11,7 @@ var project = new Project("explorer", "../config.txt");
 project.addCanvas(scatterplot.canvas);
 project.addCanvas(scatterplot.zoomInCanvas);
 
-var view = new View("explorer", 0, 0, 2000, 2000);
+var view = new View("explorer", 0, 0, 1000, 1000);
 project.addView(view);
 
 project.setInitialStates(view, scatterplot.canvas, 0, 0);

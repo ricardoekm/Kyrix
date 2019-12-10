@@ -155,7 +155,7 @@ function resizeKyrixSvg() {
         var svg = div.firstElementChild;
 
         svg.setAttribute(
-            "viewbox",
+            "viewBox",
             "0 0 " +
                 (containerW * containerW) / realW +
                 " " +

@@ -202,7 +202,6 @@ function zoomed(viewId) {
         .attr("viewBox")
         .split(" ");
 
-    console.log("curViewPort" + curViewport)
     d3.selectAll(viewClass + ".mainsvg:not(.static)").attr(
         "viewBox",
         viewportX +

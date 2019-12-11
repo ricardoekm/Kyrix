@@ -24,8 +24,8 @@ const rendering = function(svg, data) {
     var spec = {
         $schema: 'https://vega.github.io/schema/vega/v5.json',
         padding: 5,
-        width: 800,
-        height: 600,
+        width: 1000,
+        height: 2000,
         data: [
           {
             name: 'source',
@@ -118,18 +118,18 @@ const rendering = function(svg, data) {
 var placement = {
     centroid_x: "col:idade",
     centroid_y: "col:rendimento",
-    width: "con:1",
-    height: "con:1"
+    width: "con:2",
+    height: "con:2"
 };
 
 var layer = new Layer(transform, false);
 layer.addRenderingFunc(rendering);
 layer.addPlacement(placement);
 
-var canvas = new Canvas("scatterplot", 10000, 10000);
+var canvas = new Canvas("scatterplot", 2000, 2000);
 canvas.addLayer(layer);
 
-var zoomInCanvas = new Canvas("zoom_in_scatterplot", 40000, 40000);
+var zoomInCanvas = new Canvas("zoom_in_scatterplot", 4000, 4000);
 zoomInCanvas.addLayer(layer);
 
 module.exports = {

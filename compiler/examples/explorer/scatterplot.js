@@ -11,12 +11,25 @@ const transform = new Transform(
     "explorer",
     function(row) {
         var ret = [];
-        ret.push(row[0]);
-        ret.push(row[1]);
+        ret.push(row[0])
+        ret.push(row[1])
+
+        ret.push(
+          d3
+              .scaleLinear()
+              .domain([0, 1000])
+              .range([18, 91])(row[0])
+        );
+        ret.push(
+            d3
+                .scaleLinear()
+                .domain([0, 2000])
+                .range([0, 9500])(row[1])
+        );
 
         return Java.to(ret, "java.lang.String[]");
     },
-    ["rendimento", "idade"],
+    ["rendimento", "idade", "x", "y"],
     true
 );
 
@@ -62,22 +75,6 @@ const rendering = function(svg, data) {
             range: 'height'
           }
         ],
-        axes: [
-          {
-            scale: 'x',
-            grid: true,
-            domain: false,
-            orient: 'bottom',
-            tickCount: 20
-          },
-          {
-            scale: 'y',
-            grid: true,
-            domain: false,
-            orient: 'left',
-            titlePadding: 5
-          }
-        ],
         marks: [
           {
             name: 'marks',
@@ -116,8 +113,8 @@ const rendering = function(svg, data) {
 };
 
 var placement = {
-    centroid_x: "col:idade",
-    centroid_y: "col:rendimento",
+    centroid_x: "col:x",
+    centroid_y: "col:y",
     width: "con:2",
     height: "con:2"
 };
@@ -126,10 +123,10 @@ var layer = new Layer(transform, false);
 layer.addRenderingFunc(rendering);
 layer.addPlacement(placement);
 
-var canvas = new Canvas("scatterplot", 2000, 2000);
+var canvas = new Canvas("scatterplot", 1000, 20000);
 canvas.addLayer(layer);
 
-var zoomInCanvas = new Canvas("zoom_in_scatterplot", 4000, 4000);
+var zoomInCanvas = new Canvas("zoom_in_scatterplot", 2000, 40000);
 zoomInCanvas.addLayer(layer);
 
 module.exports = {

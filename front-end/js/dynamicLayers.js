@@ -495,7 +495,7 @@ function renderDynamicBoxes(
             "x=" +
             (viewportX | 0) +
             "&" +
-            "y=" +
+            "y=0" +
             (viewportY | 0);
         for (var i = 0; i < gvd.predicates.length; i++)
             postData +=
